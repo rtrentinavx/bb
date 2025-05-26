@@ -56,12 +56,6 @@ variable "controller_admin_email" {
   default     = "admin@example.com"
 }
 
-variable "controller_admin_password" {
-  description = "Admin password for the Aviatrix Controller"
-  type        = string
-  sensitive   = true
-}
-
 variable "account_email" {
   description = "Email for the Aviatrix account"
   type        = string
@@ -70,12 +64,6 @@ variable "account_email" {
 
 variable "access_account_name" {
   description = "Name of the Aviatrix access account"
-  type        = string
-  sensitive   = true
-}
-
-variable "customer_id" {
-  description = "Aviatrix customer license ID"
   type        = string
   sensitive   = true
 }
