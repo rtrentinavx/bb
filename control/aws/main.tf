@@ -70,6 +70,7 @@ module "mc-transit" {
   bgp_manual_spoke_advertise_cidrs = each.value.bgp_manual_spoke_advertise_cidrs
   enable_preserve_as_path          = true
   enable_segmentation              = true
+  enable_advertise_transit_cidr    = true
 }
 
 module "mc-firenet" {
@@ -78,7 +79,7 @@ module "mc-firenet" {
   version                = "1.6.0"
   transit_module         = module.mc-transit[each.key]
   firewall_image         = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
-  firewall_image_version = "11.2.5"
+  firewall_image_version = "10.2.14"
   instance_size          = each.value.fw_instance_size
   egress_enabled         = true
   fw_amount              = each.value.fw_amount

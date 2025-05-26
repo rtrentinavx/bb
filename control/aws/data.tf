@@ -16,7 +16,7 @@ data "aws_ssm_parameter" "aviatrix_password" {
 
 data "aws_ec2_transit_gateway" "tgw" {
   depends_on = [aws_ec2_transit_gateway.tgw]
-  for_each   = { for k, v in var.tgws : v.name => v if !v.create_tgw }
+  for_each   = { for k, v in var.tgws : k => v if !v.create_tgw }
 
   filter {
     name   = "options.amazon-side-asn"
