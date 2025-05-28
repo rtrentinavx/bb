@@ -29,7 +29,7 @@ variable "tgws" {
   type = map(object({
     amazon_side_asn             = number
     region                      = string
-    transit_gateway_cidr_blocks = optional(list(string), [])
+    transit_gateway_cidr_blocks = optional(list(string),[])
     create_tgw                  = bool # True to create TGW, false for existing
   }))
   default = {}

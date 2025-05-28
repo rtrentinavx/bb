@@ -5,8 +5,16 @@ terraform {
       version = "3.2.2"
     }
   }
+  cloud {
+    organization = "lab-test-avx"
+    workspaces {
+      name = "aws"
+    }
+  }
 }
+
 provider "aws" {
+
 }
 
 provider "aviatrix" {

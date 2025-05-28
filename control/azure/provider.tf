@@ -1,19 +1,11 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
 terraform {
   required_providers {
     aviatrix = {
       source  = "AviatrixSystems/aviatrix"
-      version = "3.2.1"
-    }
-  }
-  cloud {
-    organization = "lab-test-avx"
-    workspaces {
-      name = "gcp"
+      version = "3.2.2"
     }
   }
 }
-
 provider "aws" {
 
 }
@@ -25,9 +17,6 @@ provider "aviatrix" {
   skip_version_validation = false
 }
 
-provider "google" {
-
+provider "azure" {
+  
 }
-
-# $ export AVIATRIX_USERNAME="admin"
-# $ export AVIATRIX_PASSWORD="password"

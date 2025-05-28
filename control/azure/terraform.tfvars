@@ -18,10 +18,10 @@ tgws = {
     create_tgw                  = true
   }
   on-prem = {
-    amazon_side_asn             = 65534
-    region                      = "us-east-1"
+    amazon_side_asn = 65534
+    region          = "us-east-1"
     transit_gateway_cidr_blocks = ["172.19.0.0/24"]
-    create_tgw                  = false
+    create_tgw = false
   }
 }
 transits = {
@@ -62,7 +62,7 @@ transits = {
         connect_peer_2    = "169.254.17.0/29"
         ha_connect_peer_2 = "169.254.18.0/29"
       }
-      "on-prem" = {
+    "on-prem" = {
         connect_peer_1    = "169.254.19.0/29"
         ha_connect_peer_1 = "169.254.20.0/29"
         connect_peer_2    = "169.254.21.0/29"

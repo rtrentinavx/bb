@@ -1,35 +1,4 @@
 # Updated on May 22, 2025 at 04:11 PM EDT
-# Variable for Aviatrix Controller IP
-variable "controller_ip" {
-  type        = string
-  description = "IP address or hostname of the Aviatrix Controller"
-  validation {
-    condition     = length(var.controller_ip) > 0
-    error_message = "controller_ip must be non-empty."
-  }
-}
-
-# Variable for Aviatrix Controller username
-variable "controller_username" {
-  type        = string
-  description = "Username for Aviatrix Controller authentication"
-  validation {
-    condition     = length(var.controller_username) > 0
-    error_message = "controller_username must be non-empty."
-  }
-}
-
-# Variable for Aviatrix Controller password
-variable "controller_password" {
-  type        = string
-  description = "Password for Aviatrix Controller authentication"
-  sensitive   = true
-  validation {
-    condition     = length(var.controller_password) > 0
-    error_message = "controller_password must be non-empty."
-  }
-}
-
 # Variable for hub project ID
 variable "hub_project_id" {
   type        = string

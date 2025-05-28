@@ -1,7 +1,4 @@
 # Updated on May 22, 2025 at 04:11 PM EDT
-controller_ip       = "34.173.12.149"
-controller_username = "admin"
-controller_password = "Avtx2019!"
 hub_project_id      = "rtrentin-01"
 transits = [
   {
