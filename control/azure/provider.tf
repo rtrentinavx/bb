@@ -17,6 +17,8 @@ provider "aviatrix" {
   skip_version_validation = false
 }
 
-provider "azure" {
-  
+provider "azurerm" {
+  subscription_id = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
+  features {
+  }
 }
