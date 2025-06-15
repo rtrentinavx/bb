@@ -1,28 +1,22 @@
 locals {
   stripped_names = {
-    for k, v in var.transits : k => (
+    for k, v in merge(var.transits, var.spokes) : k => (
       length(regexall("^(.+)-vnet$", k)) > 0 ?
       regex("^(.+)-vnet$", k)[0] : k
     )
   }
 
-  vwan_names = toset(flatten([
-    [for t in var.transits : [for c in t.vwan_connections : c.vwan_name if try(c.vwan_name != "", false)]],
-    [for v in var.vnets : v.vwan_name if v.vwan_name != ""]
-  ]))
+  transit_gw_map = {
+    for k, v in var.transits : "${v.account}_${v.region}" => local.stripped_names[k]
+  }
 
-  vwan_hub_to_vwan = merge(
-    { for t in flatten([
-      for t in var.transits : [
-        for c in t.vwan_connections : {
-          vwan_hub_name = c.vwan_hub_name
-          vwan_name     = c.vwan_name
-        } if try(c.vwan_hub_name != "", false)
-      ]
-      ]) : t.vwan_hub_name => t.vwan_name...
-    },
-    { for v in var.vnets : v.vwan_hub_name => [v.vwan_name] if v.vwan_hub_name != "" }
-  )
+  spoke_transit_gw = {
+    for k, v in var.spokes : k => local.transit_gw_map["${v.account}_${v.region}"]
+  }
+
+  vwan_names = toset([for k in keys(var.vwan_hubs) : "vwan-${k}"])
+
+  vwan_hub_to_vwan = { for k in keys(var.vwan_hubs) : k => ["vwan-${k}"] }
 
   vwan_hub_to_location = { for k, v in var.vwan_hubs : k => v.location }
 
@@ -44,39 +38,119 @@ locals {
     ])
   }
 
+  vwan_names_per_spoke = {
+    for spoke_key, spoke in var.spokes : spoke_key => toset([
+      for conn in spoke.vwan_connections : conn.vwan_name if try(conn.vwan_hub_name != "", false)
+    ])
+  }
+
   all_vwan_hub_names = toset(values(local.vwan_hub_names))
 
-  # Parse VNet peering to extract hub VNet details
-  transit_peering_details = {
+  transit_vnet_details = {
+    for k, v in var.transits : k => {
+      split_id        = split("/", module.mc-transit[k].vpc.vpc_id)
+      subscription_id = data.azurerm_subscription.current.subscription_id
+      resource_group  = element(split("/", module.mc-transit[k].vpc.vpc_id), 4)
+      vnet_name       = element(split("/", module.mc-transit[k].vpc.vpc_id), 8)
+    }
+  }
+
+  spoke_vnet_details = {
+    for k, v in var.spokes : k => {
+      split_id        = split("/", module.mc-spoke[k].vpc.vpc_id)
+      subscription_id = data.azurerm_subscription.current.subscription_id
+      resource_group  = element(split("/", module.mc-spoke[k].vpc.vpc_id), 4)
+      vnet_name       = element(split("/", module.mc-spoke[k].vpc.vpc_id), 8)
+    }
+  }
+
+  transit_hub_vnets = {
     for transit_key, transit in var.transits : transit_key => {
-      peering_id          = length(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings) > 0 ? values(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings)[0] : ""
-      split_data          = length(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings) > 0 ? split("/", values(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings)[0]) : []
-      hub_vnet_name       = length(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings) > 0 ? split("/", values(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings)[0])[8] : ""
-      hub_resource_group  = length(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings) > 0 ? split("/", values(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings)[0])[4] : ""
-      hub_subscription_id = length(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings) > 0 ? split("/", values(data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings)[0])[2] : ""
+      for peering_name, peering_id in data.azurerm_virtual_network.transit_vnet[transit_key].vnet_peerings :
+      peering_name => {
+        vnet_name       = split("/", peering_id)[8]
+        resource_group  = split("/", peering_id)[4]
+        subscription_id = data.azurerm_subscription.current.subscription_id
+      }
+      if length(regexall("^HV_([^-]+)-", split("/", peering_id)[8])) > 0
+    }
+  }
+
+  spoke_hub_vnets = {
+    for spoke_key, spoke in var.spokes : spoke_key => {
+      for peering_name, peering_id in data.azurerm_virtual_network.spoke_vnet[spoke_key].vnet_peerings :
+      peering_name => {
+        vnet_name       = split("/", peering_id)[8]
+        resource_group  = split("/", peering_id)[4]
+        subscription_id = data.azurerm_subscription.current.subscription_id
+      }
+      if length(regexall("^HV_([^-]+)-", split("/", peering_id)[8])) > 0
+    }
+  }
+
+  hub_managed_vnets = {
+    for k, v in var.vwan_hubs : k => {
+      vnet_name = try(
+        [for vnet in flatten([for tk, tv in local.transit_hub_vnets : [for peering in values(tv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.vnet_name][0],
+        [for vnet in flatten([for sk, sv in local.spoke_hub_vnets : [for peering in values(sv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.vnet_name][0],
+        "unknown"
+      )
+      resource_group = try(
+        [for vnet in flatten([for tk, tv in local.transit_hub_vnets : [for peering in values(tv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.resource_group][0],
+        [for vnet in flatten([for sk, sv in local.spoke_hub_vnets : [for peering in values(sv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.resource_group][0],
+        "unknown"
+      )
+      subscription_id = try(
+        [for vnet in flatten([for tk, tv in local.transit_hub_vnets : [for peering in values(tv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.subscription_id][0],
+        [for vnet in flatten([for sk, sv in local.spoke_hub_vnets : [for peering in values(sv) : peering if length(regexall("^HV_${k}-", peering.vnet_name)) > 0]]) : vnet.subscription_id][0],
+        data.azurerm_subscription.current.subscription_id
+      )
     }
   }
 
   transit_vwan_pairs = flatten([
     for transit_key, transit in var.transits : [
       for idx, conn in transit.vwan_connections : {
-        transit_key   = transit_key
-        vwan_name     = conn.vwan_name
-        vwan_hub_name = conn.vwan_hub_name
+        transit_key     = transit_key
+        key             = transit_key
+        type            = "transit"
+        vwan_name       = conn.vwan_name
+        vwan_hub_name   = conn.vwan_hub_name
+        local_as_number = transit.local_as_number
         bgp_lan_ips = {
           primary = module.mc-transit[transit_key].transit_gateway.bgp_lan_ip_list[0]
           ha      = module.mc-transit[transit_key].transit_gateway.ha_bgp_lan_ip_list[0]
         }
         pair_key        = "${transit_key}.${conn.vwan_hub_name}.${idx}"
-        remote_vpc_name = "${local.transit_peering_details[transit_key].hub_vnet_name}:${local.transit_peering_details[transit_key].hub_resource_group}:${local.transit_peering_details[transit_key].hub_subscription_id}"
+        remote_vpc_name = "${local.hub_managed_vnets[conn.vwan_hub_name].vnet_name}:${local.hub_managed_vnets[conn.vwan_hub_name].resource_group}:${local.hub_managed_vnets[conn.vwan_hub_name].subscription_id}"
       } if try(conn.vwan_hub_name != "", false) && contains(keys(var.vwan_hubs), conn.vwan_hub_name)
     ] if length(transit.vwan_connections) > 0
   ])
 
-  transit_vwan_map = { for pair in local.transit_vwan_pairs : pair.pair_key => pair }
+  spoke_vwan_pairs = flatten([
+    for spoke_key, spoke in var.spokes : [
+      for idx, conn in spoke.vwan_connections : {
+        spoke_key       = spoke_key
+        key             = spoke_key
+        type            = "spoke"
+        vwan_name       = conn.vwan_name
+        vwan_hub_name   = conn.vwan_hub_name
+        local_as_number = spoke.local_as_number
+        bgp_lan_ips = {
+          primary = module.mc-spoke[spoke_key].spoke_gateway.bgp_lan_ip_list[0]
+          ha      = module.mc-spoke[spoke_key].spoke_gateway.ha_bgp_lan_ip_list[0]
+        }
+        pair_key        = "${spoke_key}.${conn.vwan_hub_name}.${idx}"
+        remote_vpc_name = "${local.hub_managed_vnets[conn.vwan_hub_name].vnet_name}:${local.hub_managed_vnets[conn.vwan_hub_name].resource_group}:${local.hub_managed_vnets[conn.vwan_hub_name].subscription_id}"
+      } if try(conn.vwan_hub_name != "", false) && contains(keys(var.vwan_hubs), conn.vwan_hub_name)
+    ] if length(spoke.vwan_connections) > 0
+  ])
 
+  vwan_pairs       = concat(local.transit_vwan_pairs, local.spoke_vwan_pairs)
+  vwan_map         = { for pair in local.vwan_pairs : pair.pair_key => pair }
+  transit_vwan_map = { for pair in local.transit_vwan_pairs : pair.pair_key => pair }
   vwan_connect_ip = {
-    for pair in local.transit_vwan_pairs : pair.pair_key => {
+    for pair in local.vwan_pairs : pair.pair_key => {
       hub_ip_primary = azurerm_virtual_hub.hub[pair.vwan_hub_name].virtual_router_ips[0]
       hub_ip_ha      = azurerm_virtual_hub.hub[pair.vwan_hub_name].virtual_router_ips[1]
     }
@@ -84,7 +158,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "vwan_rg" {
-  for_each = { for k, v in var.vwan_hubs : k => v }
+  for_each = var.vwan_hubs
   name     = "rg-vwan-${lower(each.key)}"
   location = each.value.location
 }
@@ -96,27 +170,75 @@ resource "azurerm_resource_group" "transit_rg" {
 }
 
 resource "azurerm_resource_group" "vnet_rg" {
-  for_each = var.vnets
+  for_each = merge(var.vnets, var.spokes)
   name     = "rg-vnet-${lower(each.key)}-${lower(replace(each.value.region, " ", ""))}"
   location = each.value.region
 }
 
 resource "azurerm_virtual_wan" "vwan" {
-  for_each            = { for k, v in var.vwan_hubs : k => v }
-  name                = "vwan-${each.key}"
-  resource_group_name = azurerm_resource_group.vwan_rg[each.key].name
-  location            = each.value.location
+  for_each            = local.vwan_names
+  name                = each.value
+  resource_group_name = azurerm_resource_group.vwan_rg[split("vwan-", each.value)[1]].name
+  location            = local.vwan_hub_to_location[split("vwan-", each.value)[1]]
   type                = "Standard"
+  depends_on          = [azurerm_resource_group.vwan_rg]
+}
+
+resource "azurerm_virtual_network" "vnet" {
+  for_each            = var.vnets
+  name                = each.key
+  resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
+  location            = each.value.region
+  address_space       = [each.value.cidr]
+}
+
+resource "azurerm_subnet" "private_subnet" {
+  for_each             = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
+  name                 = "${each.key}-private"
+  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
+  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
+  address_prefixes     = each.value.private_subnets
+}
+
+resource "azurerm_subnet" "public_subnet" {
+  for_each             = { for k, v in var.vnets : k => v if length(v.public_subnets) > 0 }
+  name                 = "${each.key}-public"
+  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
+  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
+  address_prefixes     = each.value.public_subnets
 }
 
 resource "azurerm_virtual_hub" "hub" {
-  for_each            = { for k, v in var.vwan_hubs : k => v }
-  name                = "${each.key}-${lower(replace(each.value.location, " ", ""))}-hub"
+  for_each            = var.vwan_hubs
+  name                = local.vwan_hub_names[each.key]
   resource_group_name = azurerm_resource_group.vwan_rg[each.key].name
   location            = each.value.location
-  virtual_wan_id      = azurerm_virtual_wan.vwan[each.key].id
+  virtual_wan_id      = azurerm_virtual_wan.vwan["vwan-${each.key}"].id
   address_prefix      = each.value.virtual_hub_cidr
-  sku                 = "Standard"
+  depends_on          = [azurerm_virtual_wan.vwan, azurerm_resource_group.vwan_rg]
+}
+
+resource "azurerm_virtual_hub_connection" "transit_connection" {
+  for_each = merge(
+    { for pair in local.vwan_pairs : pair.pair_key => pair },
+    { for k, v in var.vnets : "${k}.vnet" => merge(v, { type = "vnet", key = k }) if v.vwan_name != "" }
+  )
+  name                      = "${each.value.key}-to-vwan-${each.value.vwan_name}"
+  virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
+  remote_virtual_network_id = each.value.type == "transit" ? "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-transit[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-transit[each.value.key].vpc.name}" : each.value.type == "spoke" ? "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-spoke[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-spoke[each.value.key].vpc.name}" : azurerm_virtual_network.vnet[each.value.key].id
+  routing {
+    propagated_route_table {
+      route_table_ids = [azurerm_virtual_hub.hub[each.value.vwan_hub_name].default_route_table_id]
+    }
+  }
+  depends_on = [azurerm_virtual_hub.hub]
+}
+
+resource "azurerm_virtual_hub_connection" "vnet_connection" {
+  for_each                  = { for k, v in var.vnets : k => v if v.vwan_name != "" }
+  name                      = "${each.key}-to-vwan-${each.value.vwan_name}"
+  virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
+  remote_virtual_network_id = azurerm_virtual_network.vnet[each.key].id
 }
 
 module "mc-transit" {
@@ -155,51 +277,56 @@ module "mc-firenet" {
   fw_amount              = each.value.fw_amount
 }
 
-resource "azurerm_virtual_network" "vnet" {
-  for_each            = var.vnets
-  name                = each.key
-  resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
-  location            = each.value.region
-  address_space       = [each.value.cidr]
+module "mc-spoke" {
+  for_each                 = var.spokes
+  source                   = "terraform-aviatrix-modules/mc-spoke/aviatrix"
+  version                  = "1.7.1"
+  account                  = each.value.account
+  cloud                    = "azure"
+  cidr                     = each.value.cidr
+  region                   = each.value.region
+  instance_size            = each.value.instance_size
+  name                     = each.key
+  gw_name                  = local.stripped_names[each.key]
+  local_as_number          = each.value.local_as_number
+  bgp_ecmp                 = true
+  insane_mode              = true
+  resource_group           = azurerm_resource_group.vnet_rg[each.key].name
+  transit_gw               = local.spoke_transit_gw[each.key]
+  enable_bgp               = true
+  enable_bgp_over_lan      = true
+  bgp_lan_interfaces_count = 1
+  depends_on               = [azurerm_resource_group.vnet_rg]
 }
 
-resource "azurerm_subnet" "private_subnet" {
-  for_each             = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
-  name                 = "${each.key}-private"
-  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
-  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
-  address_prefixes     = each.value.private_subnets
-}
-
-resource "azurerm_subnet" "public_subnet" {
-  for_each             = { for k, v in var.vnets : k => v if length(v.public_subnets) > 0 }
-  name                 = "${each.key}-public"
-  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
-  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
-  address_prefixes     = each.value.public_subnets
-}
-
-resource "azurerm_virtual_hub_connection" "transit_connection" {
-  for_each                  = local.transit_vwan_map
-  name                      = "${each.value.transit_key}-to-vwan-${each.value.vwan_name}"
-  virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
-  remote_virtual_network_id = "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-transit[each.value.transit_key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-transit[each.value.transit_key].vpc.name}"
-  routing {
-    propagated_route_table {
-      route_table_ids = [azurerm_virtual_hub.hub[each.value.vwan_hub_name].default_route_table_id]
-    }
-  }
-}
-
-resource "azurerm_virtual_hub_connection" "vnet_connection" {
-  for_each                  = { for k, v in var.vnets : k => v if v.vwan_name != "" }
-  name                      = "${each.key}-to-vwan-${each.value.vwan_name}"
-  virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
-  remote_virtual_network_id = azurerm_virtual_network.vnet[each.key].id
-  routing {
-    propagated_route_table {
-      route_table_ids = [azurerm_virtual_hub.hub[each.value.vwan_hub_name].default_route_table_id]
-    }
+resource "aviatrix_transit_external_device_conn" "external" {
+  for_each                  = { for pair in local.vwan_pairs : pair.pair_key => pair }
+  vpc_id                    = each.value.type == "transit" ? module.mc-transit[each.value.key].vpc.vpc_id : module.mc-spoke[each.value.key].vpc.vpc_id
+  connection_name           = "external-${each.value.vwan_hub_name}-${each.value.key}"
+  gw_name                   = each.value.type == "transit" ? module.mc-transit[each.value.key].transit_gateway.gw_name : module.mc-spoke[each.value.key].spoke_gateway.gw_name
+  connection_type           = "bgp"
+  tunnel_protocol           = "LAN"
+  remote_vpc_name           = format("%s:%s:%s", local.hub_managed_vnets[each.value.vwan_hub_name].vnet_name, local.hub_managed_vnets[each.value.vwan_hub_name].resource_group, local.hub_managed_vnets[each.value.vwan_hub_name].subscription_id)
+  ha_enabled                = true
+  bgp_local_as_num          = each.value.local_as_number
+  bgp_remote_as_num         = local.vwan_hub_info[each.value.vwan_hub_name].azure_asn
+  backup_bgp_remote_as_num  = local.vwan_hub_info[each.value.vwan_hub_name].azure_asn
+  remote_lan_ip             = local.vwan_connect_ip[each.key].hub_ip_primary
+  backup_remote_lan_ip      = local.vwan_connect_ip[each.key].hub_ip_ha
+  local_lan_ip              = each.value.bgp_lan_ips.primary
+  backup_local_lan_ip       = each.value.bgp_lan_ips.ha
+  enable_bgp_lan_activemesh = true
+  direct_connect            = false
+  custom_algorithms         = false
+  enable_edge_segmentation  = false
+  phase1_local_identifier   = null
+  depends_on = [
+    azurerm_virtual_hub_connection.transit_connection,
+    data.azurerm_virtual_network.transit_vnet,
+    data.azurerm_virtual_network.spoke_vnet
+  ]
+  lifecycle {
+    ignore_changes = all
   }
 }
 
@@ -219,63 +346,4 @@ resource "azurerm_virtual_hub_bgp_connection" "peer_avx_ha" {
   peer_asn                      = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
   peer_ip                       = each.value.bgp_lan_ips.ha
   virtual_network_connection_id = azurerm_virtual_hub_connection.transit_connection[each.key].id
-}
-
-resource "aviatrix_transit_external_device_conn" "external" {
-  for_each                  = local.transit_vwan_map
-  vpc_id                    = module.mc-transit[each.value.transit_key].vpc.vpc_id
-  connection_name           = "vwan-connection-${each.value.vwan_hub_name}-${each.value.transit_key}"
-  gw_name                   = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
-  connection_type           = "bgp"
-  tunnel_protocol           = "LAN"
-  remote_vpc_name           = each.value.remote_vpc_name
-  ha_enabled                = true
-  bgp_local_as_num          = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
-  bgp_remote_as_num         = local.vwan_hub_info[each.value.vwan_hub_name].azure_asn
-  backup_bgp_remote_as_num  = local.vwan_hub_info[each.value.vwan_hub_name].azure_asn
-  remote_lan_ip             = local.vwan_connect_ip[each.key].hub_ip_primary
-  backup_remote_lan_ip      = local.vwan_connect_ip[each.key].hub_ip_ha
-  local_lan_ip              = each.value.bgp_lan_ips.primary
-  backup_local_lan_ip       = each.value.bgp_lan_ips.ha
-  enable_bgp_lan_activemesh = true
-  direct_connect            = false
-  custom_algorithms         = false
-  enable_edge_segmentation  = false
-  phase1_local_identifier   = null
-  depends_on = [
-    azurerm_virtual_hub_connection.transit_connection,
-    data.azurerm_virtual_network.transit_vnet
-  ]
-  lifecycle {
-    ignore_changes = all
-  }
-}
-
-resource "aviatrix_segmentation_network_domain" "segmentation_network_domain" {
-  for_each    = local.transit_vwan_map
-  domain_name = each.value.vwan_hub_name
-}
-
-resource "aviatrix_segmentation_network_domain" "infra" {
-  domain_name = "infra"
-}
-
-resource "aviatrix_segmentation_network_domain_association" "external_segmentation_association" {
-  for_each            = local.transit_vwan_map
-  network_domain_name = each.value.vwan_hub_name
-  attachment_name     = aviatrix_transit_external_device_conn.external[each.key].connection_name
-  depends_on = [
-    aviatrix_segmentation_network_domain.segmentation_network_domain,
-    aviatrix_segmentation_network_domain.infra
-  ]
-}
-
-resource "aviatrix_segmentation_network_domain_connection_policy" "to_infra" {
-  for_each      = { for name in local.all_vwan_hub_names : name => name if name != "infra" }
-  domain_name_1 = each.value
-  domain_name_2 = "infra"
-  depends_on = [
-    aviatrix_segmentation_network_domain.segmentation_network_domain,
-    aviatrix_segmentation_network_domain.infra
-  ]
 }

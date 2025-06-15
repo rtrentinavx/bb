@@ -18,7 +18,10 @@ provider "aviatrix" {
 }
 
 provider "azurerm" {
-  subscription_id = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
+  subscription_id = var.subscription_id
   features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
   }
 }

@@ -1,3 +1,6 @@
+variable "subscription_id" {
+  type = string
+}
 variable "vwan_hubs" {
   type = map(object({
     location         = string
@@ -24,6 +27,23 @@ variable "transits" {
   }))
   default = {
   }
+}
+
+variable "spokes" {
+  type = map(object({
+    cidr            = string
+    region          = string
+    instance_size   = string
+    account         = string
+    local_as_number = number
+    vwan_connections = list(object({
+      vwan_name     = string
+      vwan_hub_name = string
+    }))
+  }))
+  default = {
+  }
+
 }
 
 variable "vnets" {

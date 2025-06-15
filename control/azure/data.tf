@@ -30,3 +30,10 @@ data "azurerm_virtual_network" "transit_vnet" {
   resource_group_name = module.mc-transit[each.key].vpc.resource_group
   depends_on          = [module.mc-transit]
 }
+
+data "azurerm_virtual_network" "spoke_vnet" {
+  for_each            = var.spokes
+  name                = module.mc-spoke[each.key].vpc.name
+  resource_group_name = module.mc-spoke[each.key].vpc.resource_group
+  depends_on          = [module.mc-spoke]
+}
