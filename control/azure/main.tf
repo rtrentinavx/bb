@@ -249,13 +249,14 @@ resource "azurerm_subnet_route_table_association" "private_subnet_association" {
 }
 
 resource "azurerm_virtual_hub" "hub" {
-  for_each            = var.vwan_hubs
-  name                = local.vwan_hub_names[each.key]
-  resource_group_name = azurerm_resource_group.vwan_rg[each.key].name
-  location            = each.value.location
-  virtual_wan_id      = azurerm_virtual_wan.vwan["vwan-${each.key}"].id
-  address_prefix      = each.value.virtual_hub_cidr
-  depends_on          = [azurerm_virtual_wan.vwan, azurerm_resource_group.vwan_rg]
+  for_each                               = var.vwan_hubs
+  name                                   = local.vwan_hub_names[each.key]
+  resource_group_name                    = azurerm_resource_group.vwan_rg[each.key].name
+  location                               = each.value.location
+  virtual_wan_id                         = azurerm_virtual_wan.vwan["vwan-${each.key}"].id
+  address_prefix                         = each.value.virtual_hub_cidr
+  virtual_router_auto_scale_min_capacity = each.value.virtual_router_auto_scale_min_capacity
+  depends_on                             = [azurerm_virtual_wan.vwan, azurerm_resource_group.vwan_rg]
 }
 
 resource "azurerm_virtual_hub_connection" "transit_connection" {

@@ -3,9 +3,10 @@ variable "subscription_id" {
 }
 variable "vwan_hubs" {
   type = map(object({
-    location         = string
-    virtual_hub_cidr = string
-    subscription_id  = string
+    location                               = string
+    virtual_hub_cidr                       = string
+    subscription_id                        = optional(string)
+    virtual_router_auto_scale_min_capacity = optional(string)
   }))
   default = {
   }

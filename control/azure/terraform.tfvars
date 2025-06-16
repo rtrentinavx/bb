@@ -39,14 +39,14 @@ vwan_hubs = {
     subscription_id  = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
   }
   "non-prod" = {
-    location         = "East US"
-    virtual_hub_cidr = "10.3.0.0/24"
-    subscription_id  = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
+    location                               = "East US"
+    virtual_hub_cidr                       = "10.3.0.0/24"
+    subscription_id                        = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
+    virtual_router_auto_scale_min_capacity = 4
   }
   "prod" = {
     location         = "East US"
     virtual_hub_cidr = "10.3.0.0/24"
-    subscription_id  = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
   }
 }
 
