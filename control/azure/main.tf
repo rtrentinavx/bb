@@ -189,11 +189,41 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 resource "azurerm_subnet" "private_subnet" {
-  for_each             = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
-  name                 = "${each.key}-private"
-  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
-  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
-  address_prefixes     = each.value.private_subnets
+  for_each = {
+    for s in flatten([
+      for k, v in var.vnets : [
+        for i, subnet in v.private_subnets : {
+          key    = k
+          subnet = subnet
+          region = v.region
+          index  = i
+        }
+      ]
+    ]) : "${s.key}-private-${s.index + 1}" => s
+  }
+  name                 = "${each.value.key}-private-${each.value.index + 1}"
+  resource_group_name  = azurerm_resource_group.vnet_rg[each.value.key].name
+  virtual_network_name = azurerm_virtual_network.vnet[each.value.key].name
+  address_prefixes     = [each.value.subnet]
+}
+
+resource "azurerm_subnet" "public_subnet" {
+  for_each = {
+    for s in flatten([
+      for k, v in var.vnets : [
+        for i, subnet in v.public_subnets : {
+          key    = k
+          subnet = subnet
+          region = v.region
+          index  = i
+        }
+      ]
+    ]) : "${s.key}-public-${s.index + 1}" => s
+  }
+  name                 = "${each.value.key}-public-${each.value.index + 1}"
+  resource_group_name  = azurerm_resource_group.vnet_rg[each.value.key].name
+  virtual_network_name = azurerm_virtual_network.vnet[each.value.key].name
+  address_prefixes     = [each.value.subnet]
 }
 
 resource "azurerm_route_table" "private_route_table" {
@@ -204,26 +234,18 @@ resource "azurerm_route_table" "private_route_table" {
 }
 
 resource "azurerm_route" "private_default_null" {
-  for_each               = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
-  name                   = "default-to-null"
-  resource_group_name    = azurerm_resource_group.vnet_rg[each.key].name
-  route_table_name       = azurerm_route_table.private_route_table[each.key].name
-  address_prefix         = "0.0.0.0/0"
-  next_hop_type          = "None" 
+  for_each            = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
+  name                = "default-to-null"
+  resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
+  route_table_name    = azurerm_route_table.private_route_table[each.key].name
+  address_prefix      = "0.0.0.0/0"
+  next_hop_type       = "None"
 }
 
 resource "azurerm_subnet_route_table_association" "private_subnet_association" {
-  for_each       = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
-  subnet_id      = azurerm_subnet.private_subnet[each.key].id
-  route_table_id = azurerm_route_table.private_route_table[each.key].id
-}
-
-resource "azurerm_subnet" "public_subnet" {
-  for_each             = { for k, v in var.vnets : k => v if length(v.public_subnets) > 0 }
-  name                 = "${each.key}-public"
-  resource_group_name  = azurerm_resource_group.vnet_rg[each.key].name
-  virtual_network_name = azurerm_virtual_network.vnet[each.key].name
-  address_prefixes     = each.value.public_subnets
+  for_each       = azurerm_subnet.private_subnet
+  subnet_id      = each.value.id
+  route_table_id = azurerm_route_table.private_route_table[split("-private-", each.key)[0]].id
 }
 
 resource "azurerm_virtual_hub" "hub" {
