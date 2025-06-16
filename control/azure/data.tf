@@ -37,3 +37,9 @@ data "azurerm_virtual_network" "spoke_vnet" {
   resource_group_name = module.mc-spoke[each.key].vpc.resource_group
   depends_on          = [module.mc-spoke]
 }
+
+data "azurerm_virtual_network" "existing_vnet" {
+  for_each            = { for k, v in var.vnets : k => v if try(v.existing, false) && v.resource_group_name != null }
+  name                = each.key
+  resource_group_name = each.value.resource_group_name
+}

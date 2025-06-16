@@ -60,11 +60,10 @@ vnets = {
     region          = "East US"
   }
   "workload2-vnet" = {
-    cidr            = "10.5.0.0/16"
-    private_subnets = ["10.5.1.0/24", "10.5.2.0/24"]
-    public_subnets  = ["10.5.3.0/24", "10.5.4.0/24"]
-    vwan_name       = "prod"
-    vwan_hub_name   = "prod"
-    region          = "East US"
+    resource_group_name = "rg-vnet-workload2-vnet-eastus"
+    vwan_name           = "prod"
+    vwan_hub_name       = "prod"
+    region              = "East US"
+    existing            = true
   }
 }

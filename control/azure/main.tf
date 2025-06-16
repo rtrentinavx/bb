@@ -166,7 +166,10 @@ resource "azurerm_resource_group" "transit_rg" {
 }
 
 resource "azurerm_resource_group" "vnet_rg" {
-  for_each = merge(var.vnets, var.spokes)
+  for_each = {
+    for k, v in merge(var.vnets, var.spokes) : k => v
+    if lookup(var.spokes, k, null) != null || (!try(v.existing, false) && try(v.cidr, null) != null)
+  }
   name     = "rg-vnet-${lower(each.key)}-${lower(replace(each.value.region, " ", ""))}"
   location = each.value.region
 }
@@ -181,7 +184,7 @@ resource "azurerm_virtual_wan" "vwan" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  for_each            = var.vnets
+  for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && v.cidr != null }
   name                = each.key
   resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
   location            = each.value.region
@@ -192,12 +195,12 @@ resource "azurerm_subnet" "private_subnet" {
   for_each = {
     for s in flatten([
       for k, v in var.vnets : [
-        for i, subnet in v.private_subnets : {
+        for i, subnet in try(v.private_subnets, []) : {
           key    = k
           subnet = subnet
           region = v.region
           index  = i
-        }
+        } if !try(v.existing, false) && v.cidr != null
       ]
     ]) : "${s.key}-private-${s.index + 1}" => s
   }
@@ -211,12 +214,12 @@ resource "azurerm_subnet" "public_subnet" {
   for_each = {
     for s in flatten([
       for k, v in var.vnets : [
-        for i, subnet in v.public_subnets : {
+        for i, subnet in try(v.public_subnets, []) : {
           key    = k
           subnet = subnet
           region = v.region
           index  = i
-        }
+        } if !try(v.existing, false) && v.cidr != null
       ]
     ]) : "${s.key}-public-${s.index + 1}" => s
   }
@@ -226,15 +229,16 @@ resource "azurerm_subnet" "public_subnet" {
   address_prefixes     = [each.value.subnet]
 }
 
+
 resource "azurerm_route_table" "private_route_table" {
-  for_each            = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
+  for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && try(length(v.private_subnets), 0) > 0 }
   name                = "rt-${each.key}-private"
   location            = each.value.region
   resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
 }
 
 resource "azurerm_route" "private_default_null" {
-  for_each            = { for k, v in var.vnets : k => v if length(v.private_subnets) > 0 }
+  for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && try(length(v.private_subnets), 0) > 0 }
   name                = "default-to-null"
   resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
   route_table_name    = azurerm_route_table.private_route_table[each.key].name
@@ -260,13 +264,10 @@ resource "azurerm_virtual_hub" "hub" {
 }
 
 resource "azurerm_virtual_hub_connection" "transit_connection" {
-  for_each = merge(
-    { for pair in local.vwan_pairs : pair.pair_key => pair },
-    { for k, v in var.vnets : "${k}.vnet" => merge(v, { type = "vnet", key = k }) if v.vwan_name != "" }
-  )
+  for_each                  = { for pair in local.vwan_pairs : pair.pair_key => pair }
   name                      = "${each.value.key}-to-vwan-${each.value.vwan_name}"
   virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
-  remote_virtual_network_id = each.value.type == "transit" ? "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-transit[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-transit[each.value.key].vpc.name}" : each.value.type == "spoke" ? "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-spoke[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-spoke[each.value.key].vpc.name}" : azurerm_virtual_network.vnet[each.value.key].id
+  remote_virtual_network_id = each.value.type == "transit" ? "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-transit[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-transit[each.value.key].vpc.name}" : "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${module.mc-spoke[each.value.key].vpc.resource_group}/providers/Microsoft.Network/virtualNetworks/${module.mc-spoke[each.value.key].vpc.name}"
   routing {
     propagated_route_table {
       route_table_ids = [azurerm_virtual_hub.hub[each.value.vwan_hub_name].default_route_table_id]
@@ -279,7 +280,13 @@ resource "azurerm_virtual_hub_connection" "vnet_connection" {
   for_each                  = { for k, v in var.vnets : k => v if v.vwan_name != "" }
   name                      = "${each.key}-to-vwan-${each.value.vwan_name}"
   virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
-  remote_virtual_network_id = azurerm_virtual_network.vnet[each.key].id
+  remote_virtual_network_id = try(data.azurerm_virtual_network.existing_vnet[each.key].id, azurerm_virtual_network.vnet[each.key].id)
+  routing {
+    propagated_route_table {
+      route_table_ids = [azurerm_virtual_hub.hub[each.value.vwan_hub_name].default_route_table_id]
+    }
+  }
+  depends_on = [azurerm_virtual_hub.hub]
 }
 
 module "mc-transit" {
