@@ -51,20 +51,20 @@ vwan_hubs = {
 }
 
 vnets = {
-    # "workload1-vnet" = {
-    #   cidr            = "10.3.0.0/16"
-    #   private_subnets = ["10.3.1.0/24", "10.3.2.0/24"]
-    #   public_subnets  = ["10.3.3.0/24", "10.3.4.0/24"]
-    #   vwan_name       = "infra"
-    #   vwan_hub_name   = "infra"
-    #   region          = "East US"
-    # }
-  # "workload2-vnet" = {
-  #   cidr            = "10.5.0.0/16"
-  #   private_subnets = ["10.5.1.0/24", "10.5.2.0/24"]
-  #   public_subnets  = ["10.5.3.0/24", "10.5.4.0/24"]
-  #   vwan_name       = "vwan2"
-  #   vwan_hub_name   = "hub2"
-  #   region          = "West US"
-  # }
+  "workload1-vnet" = {
+    cidr            = "10.3.0.0/16"
+    private_subnets = ["10.3.1.0/24", "10.3.2.0/24"]
+    public_subnets  = ["10.3.3.0/24", "10.3.4.0/24"]
+    vwan_name       = "infra"
+    vwan_hub_name   = "infra"
+    region          = "East US"
+  }
+  "workload2-vnet" = {
+    cidr            = "10.5.0.0/16"
+    private_subnets = ["10.5.1.0/24", "10.5.2.0/24"]
+    public_subnets  = ["10.5.3.0/24", "10.5.4.0/24"]
+    vwan_name       = "prod"
+    vwan_hub_name   = "prod"
+    region          = "East US"
+  }
 }
