@@ -38,6 +38,17 @@ data "azurerm_virtual_network" "spoke_vnet" {
   depends_on          = [module.mc-spoke]
 }
 
+data "azurerm_resource_group" "existing_vwan_rg" {
+  for_each = { for k, v in var.vwan_configs : k => v if v.existing }
+  name     = each.value.resource_group_name
+}
+
+data "azurerm_virtual_wan" "existing_vwan" {
+  for_each            = { for k, v in var.vwan_configs : k => v if v.existing }
+  name                = each.key # vWAN name is the key
+  resource_group_name = each.value.resource_group_name
+}
+
 data "azurerm_virtual_network" "existing_vnet" {
   for_each            = { for k, v in var.vnets : k => v if try(v.existing, false) && v.resource_group_name != null }
   name                = each.key

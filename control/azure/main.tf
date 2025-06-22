@@ -10,9 +10,9 @@ locals {
 
   spoke_transit_gw = { for k, v in var.spokes : k => local.transit_gw_map["${v.account}_${v.region}"] }
 
-  vwan_names = toset([for k in keys(var.vwan_hubs) : "vwan-${k}"])
+  vwan_names = toset(keys(var.vwan_configs))
 
-  vwan_hub_to_vwan = { for k in keys(var.vwan_hubs) : k => ["vwan-${k}"] }
+  vwan_hub_to_vwan = { for k, v in var.vwan_hubs : k => "vwan-${k}" }
 
   vwan_hub_to_location = { for k, v in var.vwan_hubs : k => v.location }
 
@@ -145,6 +145,7 @@ locals {
   vwan_pairs       = concat(local.transit_vwan_pairs, local.spoke_vwan_pairs)
   vwan_map         = { for pair in local.vwan_pairs : pair.pair_key => pair }
   transit_vwan_map = { for pair in local.transit_vwan_pairs : pair.pair_key => pair }
+  spoke_vwan_map   = { for pair in local.spoke_vwan_pairs : pair.pair_key => pair }
   vwan_connect_ip = {
     for pair in local.vwan_pairs : pair.pair_key => {
       hub_ip_primary = azurerm_virtual_hub.hub[pair.vwan_hub_name].virtual_router_ips[0]
@@ -154,8 +155,8 @@ locals {
 }
 
 resource "azurerm_resource_group" "vwan_rg" {
-  for_each = var.vwan_hubs
-  name     = "rg-vwan-${lower(each.key)}"
+  for_each = { for k, v in var.vwan_configs : k => v if !v.existing }
+  name     = "rg-${lower(each.key)}"
   location = each.value.location
 }
 
@@ -175,10 +176,10 @@ resource "azurerm_resource_group" "vnet_rg" {
 }
 
 resource "azurerm_virtual_wan" "vwan" {
-  for_each            = local.vwan_names
-  name                = each.value
-  resource_group_name = azurerm_resource_group.vwan_rg[split("vwan-", each.value)[1]].name
-  location            = local.vwan_hub_to_location[split("vwan-", each.value)[1]]
+  for_each            = { for k, v in var.vwan_configs : k => v if !v.existing }
+  name                = each.key
+  resource_group_name = azurerm_resource_group.vwan_rg[each.key].name
+  location            = each.value.location
   type                = "Standard"
   depends_on          = [azurerm_resource_group.vwan_rg]
 }
@@ -253,14 +254,20 @@ resource "azurerm_subnet_route_table_association" "private_subnet_association" {
 }
 
 resource "azurerm_virtual_hub" "hub" {
-  for_each                               = var.vwan_hubs
-  name                                   = local.vwan_hub_names[each.key]
-  resource_group_name                    = azurerm_resource_group.vwan_rg[each.key].name
-  location                               = each.value.location
-  virtual_wan_id                         = azurerm_virtual_wan.vwan["vwan-${each.key}"].id
+  for_each = var.vwan_hubs
+  name     = local.vwan_hub_names[each.key]
+  resource_group_name = try(
+    data.azurerm_resource_group.existing_vwan_rg[local.vwan_hub_to_vwan[each.key]].name,
+    azurerm_resource_group.vwan_rg[local.vwan_hub_to_vwan[each.key]].name
+  )
+  location = each.value.location
+  virtual_wan_id = try(
+    data.azurerm_virtual_wan.existing_vwan[local.vwan_hub_to_vwan[each.key]].id,
+    azurerm_virtual_wan.vwan[local.vwan_hub_to_vwan[each.key]].id
+  )
   address_prefix                         = each.value.virtual_hub_cidr
   virtual_router_auto_scale_min_capacity = each.value.virtual_router_auto_scale_min_capacity
-  depends_on                             = [azurerm_virtual_wan.vwan, azurerm_resource_group.vwan_rg]
+  depends_on                             = [azurerm_virtual_wan.vwan, azurerm_resource_group.vwan_rg, data.azurerm_virtual_wan.existing_vwan, data.azurerm_resource_group.existing_vwan_rg]
 }
 
 resource "azurerm_virtual_hub_connection" "transit_connection" {
@@ -277,8 +284,8 @@ resource "azurerm_virtual_hub_connection" "transit_connection" {
 }
 
 resource "azurerm_virtual_hub_connection" "vnet_connection" {
-  for_each                  = { for k, v in var.vnets : k => v if v.vwan_name != "" }
-  name                      = "${each.key}-to-vwan-${each.value.vwan_name}"
+  for_each                  = var.vnets
+  name                      = "${each.key}-to-vwan-${local.vwan_hub_to_vwan[each.value.vwan_hub_name]}"
   virtual_hub_id            = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
   remote_virtual_network_id = try(data.azurerm_virtual_network.existing_vnet[each.key].id, azurerm_virtual_network.vnet[each.key].id)
   routing {
@@ -347,6 +354,11 @@ module "mc-spoke" {
   depends_on               = [azurerm_resource_group.vnet_rg]
 }
 
+resource "time_sleep" "wait_for_hub_connection" {
+  depends_on      = [azurerm_virtual_hub_connection.transit_connection]
+  create_duration = "300s"
+}
+
 resource "aviatrix_transit_external_device_conn" "transit_external" {
   for_each                  = { for pair in local.transit_vwan_pairs : pair.pair_key => pair }
   vpc_id                    = each.value.type == "transit" ? module.mc-transit[each.value.key].vpc.vpc_id : module.mc-spoke[each.value.key].vpc.vpc_id
@@ -369,7 +381,7 @@ resource "aviatrix_transit_external_device_conn" "transit_external" {
   enable_edge_segmentation  = false
   phase1_local_identifier   = null
   depends_on = [
-    azurerm_virtual_hub_connection.transit_connection,
+    time_sleep.wait_for_hub_connection,
     data.azurerm_virtual_network.transit_vnet,
     data.azurerm_virtual_network.spoke_vnet
   ]
@@ -399,7 +411,7 @@ resource "aviatrix_spoke_external_device_conn" "spoke_external" {
   custom_algorithms         = false
   phase1_local_identifier   = null
   depends_on = [
-    azurerm_virtual_hub_connection.transit_connection,
+    time_sleep.wait_for_hub_connection,
     data.azurerm_virtual_network.transit_vnet,
     data.azurerm_virtual_network.spoke_vnet
   ]
@@ -424,4 +436,24 @@ resource "azurerm_virtual_hub_bgp_connection" "peer_avx_ha" {
   peer_asn                      = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
   peer_ip                       = each.value.bgp_lan_ips.ha
   virtual_network_connection_id = azurerm_virtual_hub_connection.transit_connection[each.key].id
+}
+
+resource "azurerm_virtual_hub_bgp_connection" "spoke_peer_avx_prim" {
+  for_each                      = local.spoke_vwan_map
+  name                          = "${each.value.spoke_key}-peer-prim"
+  virtual_hub_id                = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
+  peer_asn                      = module.mc-spoke[each.value.spoke_key].spoke_gateway.local_as_number
+  peer_ip                       = each.value.bgp_lan_ips.primary
+  virtual_network_connection_id = azurerm_virtual_hub_connection.transit_connection[each.key].id
+  depends_on                    = [azurerm_virtual_hub_connection.transit_connection]
+}
+
+resource "azurerm_virtual_hub_bgp_connection" "spoke_peer_avx_ha" {
+  for_each                      = local.spoke_vwan_map
+  name                          = "${each.value.spoke_key}-peer-ha"
+  virtual_hub_id                = azurerm_virtual_hub.hub[each.value.vwan_hub_name].id
+  peer_asn                      = module.mc-spoke[each.value.spoke_key].spoke_gateway.local_as_number
+  peer_ip                       = each.value.bgp_lan_ips.ha
+  virtual_network_connection_id = azurerm_virtual_hub_connection.transit_connection[each.key].id
+  depends_on                    = [azurerm_virtual_hub_connection.transit_connection]
 }

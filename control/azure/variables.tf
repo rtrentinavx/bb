@@ -1,63 +1,27 @@
 variable "subscription_id" {
   type = string
 }
-variable "vwan_hubs" {
-  type = map(object({
-    location                               = string
-    virtual_hub_cidr                       = string
-    subscription_id                        = optional(string)
-    virtual_router_auto_scale_min_capacity = optional(string)
-  }))
-  default = {
-  }
-}
 
-variable "transits" {
+variable "vwan_configs" {
+  description = "Map of Virtual WAN configurations (new or existing)."
   type = map(object({
-    cidr             = string
-    region           = string
-    instance_size    = string
-    account          = string
-    local_as_number  = number
-    fw_amount        = optional(number)
-    fw_instance_size = optional(string)
-    vwan_connections = list(object({
-      vwan_name     = string
-      vwan_hub_name = string
-    }))
+    resource_group_name = string
+    location            = optional(string) # Required for new vWANs
+    existing            = bool             # True for existing vWANs, false for new
   }))
-  default = {
-  }
-}
-
-variable "spokes" {
-  type = map(object({
-    cidr            = string
-    region          = string
-    instance_size   = string
-    account         = string
-    local_as_number = number
-    vwan_connections = list(object({
-      vwan_name     = string
-      vwan_hub_name = string
-    }))
-  }))
-  default = {
-  }
-
+  default = {}
 }
 
 variable "vnets" {
   description = "Map of VNET configurations for new or pre-existing VNETs to connect to Virtual WAN hubs."
   type = map(object({
-    resource_group_name = optional(string)           # Resource group name for pre-existing VNETs
-    existing            = optional(bool, false)      # Flag to indicate pre-existing VNET
-    cidr                = optional(string)           # CIDR for new VNETs (required if existing = false)
-    private_subnets     = optional(list(string), []) # Private subnet CIDRs for new VNETs
-    public_subnets      = optional(list(string), []) # Public subnet CIDRs for new VNETs
-    region              = string                     # Azure region
-    vwan_name           = string                     # Virtual WAN name for hub connection
-    vwan_hub_name       = string                     # Virtual WAN hub name for connection
+    resource_group_name = optional(string)
+    existing            = optional(bool, false)
+    cidr                = optional(string)
+    private_subnets     = optional(list(string), [])
+    public_subnets      = optional(list(string), [])
+    region              = string
+    vwan_hub_name       = string
   }))
   default = {}
 
@@ -68,4 +32,48 @@ variable "vnets" {
     ])
     error_message = "The 'cidr' attribute is required for new VNETs (when existing = false or not set)."
   }
+}
+
+variable "transits" {
+  description = "Map of transit gateway configurations for Aviatrix."
+  type = map(object({
+    account          = string
+    region           = string
+    cidr             = string
+    instance_size    = string
+    local_as_number  = number
+    fw_amount        = optional(number, 0)
+    fw_instance_size = optional(string)
+    vwan_connections = list(object({
+      vwan_name     = string
+      vwan_hub_name = string
+    }))
+  }))
+  default = {}
+}
+
+variable "spokes" {
+  description = "Map of spoke gateway configurations for Aviatrix."
+  type = map(object({
+    account         = string
+    region          = string
+    cidr            = string
+    instance_size   = string
+    local_as_number = number
+    vwan_connections = list(object({
+      vwan_name     = string
+      vwan_hub_name = string
+    }))
+  }))
+  default = {}
+}
+
+variable "vwan_hubs" {
+  description = "Map of Virtual WAN hub configurations."
+  type = map(object({
+    location                               = string
+    virtual_hub_cidr                       = string
+    virtual_router_auto_scale_min_capacity = optional(number)
+  }))
+  default = {}
 }
