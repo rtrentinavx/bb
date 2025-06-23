@@ -1,5 +1,3 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
-# Variable for hub project ID
 variable "hub_project_id" {
   type        = string
   description = "GCP project ID for NCC hubs"
@@ -9,7 +7,6 @@ variable "hub_project_id" {
   }
 }
 
-# Variable for Transit Gateways
 variable "transits" {
   type = list(object({
     gw_name             = string
@@ -19,8 +16,8 @@ variable "transits" {
     vpc_cidr            = string
     gw_size             = string
     access_account_name = string
-    cloud_router_asn    = number # Added for Cloud Router BGP ASN
-    aviatrix_gw_asn     = number # Added for Aviatrix Transit Gateway ASN
+    cloud_router_asn    = number
+    aviatrix_gw_asn     = number
     bgp_lan_subnets = object({
       interconnect = string
       infra        = string
@@ -83,7 +80,6 @@ variable "transits" {
   }
 }
 
-# Variable for spokes
 variable "spokes" {
   type = list(object({
     vpc_name   = string

@@ -6,12 +6,12 @@ terraform {
       version = "3.2.1"
     }
   }
-  cloud {
-    organization = "lab-test-avx"
-    workspaces {
-      name = "gcp"
-    }
-  }
+  # cloud {
+  #   organization = "lab-test-avx"
+  #   workspaces {
+  #     name = "gcp"
+  #   }
+  # }
 }
 
 provider "aws" {
