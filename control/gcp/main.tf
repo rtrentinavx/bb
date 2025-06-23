@@ -327,57 +327,132 @@ module "mc_transit" {
 #   ]
 # }
 
-resource "google_compute_router_peer" "bgp_lan_peers" {
-  for_each = {
-    for pair in flatten([
-      for transit in var.transits : [
-        for intf_type, subnet in transit.bgp_lan_subnets : [
-          {
-            gw_name      = transit.gw_name
-            project_id   = transit.project_id
-            region       = transit.region
-            subnet       = subnet
-            intf_type    = intf_type
-            aviatrix_asn = transit.aviatrix_gw_asn
-            interface    = "pri"
-            peer_type    = "primary"
-          },
-          {
-            gw_name      = transit.gw_name
-            project_id   = transit.project_id
-            region       = transit.region
-            subnet       = subnet
-            intf_type    = intf_type
-            aviatrix_asn = transit.aviatrix_gw_asn
-            interface    = "ha"
-            peer_type    = "ha"
-          }
-        ] if subnet != "" && contains(["infra", "interconnect", "non-prod", "prod"], intf_type)
-      ]
-    ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}-${pair.peer_type}" => pair
-  }
+# Existing: Cloud Router Primary to Aviatrix Primary
+resource "google_compute_router_peer" "bgp_lan_peers_pri" {
+  for_each = { for pair in flatten([
+    for transit in var.transits : [
+      for intf_type, subnet in transit.bgp_lan_subnets : {
+        gw_name      = transit.gw_name
+        project_id   = transit.project_id
+        region       = transit.region
+        subnet       = subnet
+        intf_type    = intf_type
+        aviatrix_asn = transit.aviatrix_gw_asn
+      } if subnet != ""
+    ]
+  ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
 
-  name                      = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-peer-${each.value.peer_type}"
+  name                      = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-peer-pri"
   project                   = each.value.project_id
   region                    = each.value.region
-  router                    = google_compute_router.bgp_lan_routers["${each.value.gw_name}-bgp-lan-${each.value.intf_type}"].name
-  interface                 = each.value.interface == "pri" ? google_compute_router_interface.bgp_lan_interfaces_pri["${each.value.gw_name}-bgp-lan-${each.value.intf_type}"].name : google_compute_router_interface.bgp_lan_interfaces_ha["${each.value.gw_name}-bgp-lan-${each.value.intf_type}"].name
-  peer_ip_address           = each.value.peer_type == "primary" ? module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)] : module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)]
+  router                    = google_compute_router.bgp_lan_routers[each.key].name
+  interface                 = google_compute_router_interface.bgp_lan_interfaces_pri[each.key].name
+  peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)]
   peer_asn                  = each.value.aviatrix_asn
   advertised_route_priority = 100
-  router_appliance_instance = each.value.peer_type == "primary" ? "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${each.value.gw_name}" : "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
+  router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${each.value.gw_name}"
 
   depends_on = [
     google_compute_router.bgp_lan_routers,
     google_compute_router_interface.bgp_lan_interfaces_pri,
-    google_compute_router_interface.bgp_lan_interfaces_ha,
-    module.mc_transit,
-    google_compute_address.bgp_lan_addresses
+    module.mc_transit
   ]
+}
 
-  lifecycle {
-    ignore_changes = [peer_ip_address]
-  }
+# Existing: Cloud Router Secondary to Aviatrix HA
+resource "google_compute_router_peer" "bgp_lan_peers_ha" {
+  for_each = { for pair in flatten([
+    for transit in var.transits : [
+      for intf_type, subnet in transit.bgp_lan_subnets : {
+        gw_name      = transit.gw_name
+        project_id   = transit.project_id
+        region       = transit.region
+        subnet       = subnet
+        intf_type    = intf_type
+        aviatrix_asn = transit.aviatrix_gw_asn
+      } if subnet != ""
+    ]
+  ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
+
+  name                      = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-peer-ha"
+  project                   = each.value.project_id
+  region                    = each.value.region
+  router                    = google_compute_router.bgp_lan_routers[each.key].name
+  interface                 = google_compute_router_interface.bgp_lan_interfaces_ha[each.key].name
+  peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)]
+  peer_asn                  = each.value.aviatrix_asn
+  advertised_route_priority = 200
+  router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
+
+  depends_on = [
+    google_compute_router.bgp_lan_routers,
+    google_compute_router_interface.bgp_lan_interfaces_ha,
+    module.mc_transit
+  ]
+}
+
+# New: Cloud Router Secondary to Aviatrix Primary
+resource "google_compute_router_peer" "bgp_lan_peers_pri_to_ha" {
+  for_each = { for pair in flatten([
+    for transit in var.transits : [
+      for intf_type, subnet in transit.bgp_lan_subnets : {
+        gw_name      = transit.gw_name
+        project_id   = transit.project_id
+        region       = transit.region
+        subnet       = subnet
+        intf_type    = intf_type
+        aviatrix_asn = transit.aviatrix_gw_asn
+      } if subnet != ""
+    ]
+  ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
+
+  name                      = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-peer-pri-to-ha"
+  project                   = each.value.project_id
+  region                    = each.value.region
+  router                    = google_compute_router.bgp_lan_routers[each.key].name
+  interface                 = google_compute_router_interface.bgp_lan_interfaces_ha[each.key].name
+  peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)]
+  peer_asn                  = each.value.aviatrix_asn
+  advertised_route_priority = 300
+  router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${each.value.gw_name}"
+
+  depends_on = [
+    google_compute_router.bgp_lan_routers,
+    google_compute_router_interface.bgp_lan_interfaces_ha,
+    module.mc_transit
+  ]
+}
+
+# New: Cloud Router Primary to Aviatrix HA
+resource "google_compute_router_peer" "bgp_lan_peers_ha_to_pri" {
+  for_each = { for pair in flatten([
+    for transit in var.transits : [
+      for intf_type, subnet in transit.bgp_lan_subnets : {
+        gw_name      = transit.gw_name
+        project_id   = transit.project_id
+        region       = transit.region
+        subnet       = subnet
+        intf_type    = intf_type
+        aviatrix_asn = transit.aviatrix_gw_asn
+      } if subnet != ""
+    ]
+  ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
+
+  name                      = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-peer-ha-to-pri"
+  project                   = each.value.project_id
+  region                    = each.value.region
+  router                    = google_compute_router.bgp_lan_routers[each.key].name
+  interface                 = google_compute_router_interface.bgp_lan_interfaces_pri[each.key].name
+  peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(["infra", "interconnect", "non-prod", "prod"], each.value.intf_type)]
+  peer_asn                  = each.value.aviatrix_asn
+  advertised_route_priority = 300
+  router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
+
+  depends_on = [
+    google_compute_router.bgp_lan_routers,
+    google_compute_router_interface.bgp_lan_interfaces_pri,
+    module.mc_transit
+  ]
 }
 
 resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
