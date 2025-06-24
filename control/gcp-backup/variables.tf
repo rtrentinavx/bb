@@ -19,10 +19,10 @@ variable "transits" {
     cloud_router_asn    = number
     aviatrix_gw_asn     = number
     bgp_lan_subnets = object({
-      interconnect = optional(string)
-      infra        = optional(string)
-      non-prod     = optional(string)
-      prod         = optional(string)
+      interconnect = string
+      infra        = string
+      non-prod     = string
+      prod         = string
     })
   }))
   validation {
@@ -108,15 +108,4 @@ variable "spokes" {
     condition     = length(var.spokes) == length(distinct([for s in var.spokes : "${s.vpc_name}-${s.ncc_hub}"]))
     error_message = "Each vpc_name must be attached to a given ncc_hub only once."
   }
-}
-
-variable "ncc_hubs" {
-  description = "List of NCC hubs to create, including a flag to control creation"
-  type = list(object({
-    name   = string
-    create = bool
-  }))
-  default = [
-
-  ]
 }

@@ -1,12 +1,4 @@
 hub_project_id = "rtrentin-01"
-
-ncc_hubs = [
-  { name = "interconnect", create = true },
-  { name = "infra", create = true },
-  { name = "non-prod", create = true },
-  { name = "prod", create = true }
-]
-
 transits = [
   {
     access_account_name = "lab-test-gcp"
@@ -28,11 +20,10 @@ transits = [
     aviatrix_gw_asn  = 65511
   }
 ]
-
 spokes = [
   {
     vpc_name   = "rbk-infra"
     project_id = "rtrentin-01"
-    ncc_hub    = "non-prod"
+    ncc_hub    = "infra"
   }
 ]
