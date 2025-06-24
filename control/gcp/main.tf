@@ -249,6 +249,7 @@ module "mc_transit" {
   cidr                             = each.value.vpc_cidr
   account                          = each.value.access_account_name
   instance_size                    = each.value.gw_size
+  insane_mode                      = true
   ha_gw                            = true
   enable_bgp_over_lan              = true
   enable_transit_firenet           = false
