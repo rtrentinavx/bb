@@ -253,6 +253,7 @@ module "mc_transit" {
   ha_gw                            = true
   enable_bgp_over_lan              = true
   enable_transit_firenet           = false
+  enable_segmentation              = true
   bgp_manual_spoke_advertise_cidrs = ""
   bgp_ecmp                         = true
   local_as_number                  = each.value.aviatrix_gw_asn

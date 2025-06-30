@@ -4,6 +4,10 @@ terraform {
       source  = "AviatrixSystems/aviatrix"
       version = "3.2.1"
     }
+    terracurl = {
+      source  = "devops-rob/terracurl"
+      version = ">= 1.2.1"
+    }
   }
 }
 
