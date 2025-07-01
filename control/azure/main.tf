@@ -325,8 +325,8 @@ module "mc-firenet" {
   version  = "1.6.0"
 
   transit_module         = module.mc-transit[each.key]
-  firewall_image         = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
-  firewall_image_version = "10.2.14"
+  firewall_image         = "Palo Alto Networks VM-Series Flex Next-Generation Firewall (BYOL)"
+  firewall_image_version = "11.2.5"
   instance_size          = each.value.fw_instance_size
   egress_enabled         = true
   fw_amount              = each.value.fw_amount

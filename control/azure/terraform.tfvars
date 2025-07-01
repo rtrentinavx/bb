@@ -3,10 +3,10 @@ transits = {
   "azure-eastus-transit-vnet" = {
     cidr            = "10.1.0.0/16"
     region          = "East US"
-    instance_size   = "Standard_D3_v2"
+    instance_size   = "Standard_D5_v2"
     account         = "lab-test-azure"
     local_as_number = 65001
-    fw_amount       = 0
+    fw_amount       = 2
     vwan_connections = [
       {
         vwan_name     = "vwan-infra"
