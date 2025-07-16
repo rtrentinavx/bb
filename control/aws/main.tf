@@ -66,7 +66,7 @@ module "mc-transit" {
   local_as_number                  = each.value.local_as_number
   name                             = each.key
   gw_name                          = local.stripped_names[each.key]
-  region                           = each.value.region
+  region                           = var.region
   bgp_manual_spoke_advertise_cidrs = each.value.bgp_manual_spoke_advertise_cidrs
   enable_preserve_as_path          = true
   enable_segmentation              = true
@@ -208,12 +208,12 @@ module "vpc" {
   name = each.key
   cidr = each.value.cidr
 
-  azs             = slice(data.aws_availability_zones.available[each.key].names, 0, max(length(each.value.private_subnets), length(each.value.public_subnets)))
+  azs             = slice(data.aws_availability_zones.available.names, 0, max(length(each.value.private_subnets), length(each.value.public_subnets)))
   private_subnets = each.value.private_subnets
   public_subnets  = each.value.public_subnets
 
-  private_subnet_names = [for idx, az in slice(data.aws_availability_zones.available[each.key].names, 0, length(each.value.private_subnets)) : "${each.key}-${az}-private-${idx + 1}"]
-  public_subnet_names  = [for idx, az in slice(data.aws_availability_zones.available[each.key].names, 0, length(each.value.public_subnets)) : "${each.key}-${az}-public-${idx + 1}"]
+  private_subnet_names = [for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.private_subnets)) : "${each.key}-${az}-private-${idx + 1}"]
+  public_subnet_names  = [for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.public_subnets)) : "${each.key}-${az}-public-${idx + 1}"]
 
   private_route_table_tags = {
     Name = "${each.key}-private-rt"
@@ -223,11 +223,11 @@ module "vpc" {
   }
 
   private_subnet_tags = {
-    for idx, az in slice(data.aws_availability_zones.available[each.key].names, 0, length(each.value.private_subnets)) :
+    for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.private_subnets)) :
     tostring(idx) => "${each.key}-${az}-private-${idx + 1}"
   }
   public_subnet_tags = {
-    for idx, az in slice(data.aws_availability_zones.available[each.key].names, 0, length(each.value.public_subnets)) :
+    for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.public_subnets)) :
     tostring(idx) => "${each.key}-${az}-public-${idx + 1}"
   }
 

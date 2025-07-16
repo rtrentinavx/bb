@@ -1,15 +1,18 @@
 
 data "aws_ssm_parameter" "aviatrix_ip" {
+  provider        = aws.ssm
   name            = "/aviatrix/controller/ip"
   with_decryption = true
 }
 
 data "aws_ssm_parameter" "aviatrix_username" {
+  provider        = aws.ssm
   name            = "/aviatrix/controller/username"
   with_decryption = true
 }
 
 data "aws_ssm_parameter" "aviatrix_password" {
+  provider        = aws.ssm
   name            = "/aviatrix/controller/password"
   with_decryption = true
 }
@@ -59,6 +62,5 @@ data "aws_route_table" "route_table" {
 }
 
 data "aws_availability_zones" "available" {
-  for_each = { for k, v in var.vpcs : k => v.region }
-  state    = "available"
+  state = "available"
 }

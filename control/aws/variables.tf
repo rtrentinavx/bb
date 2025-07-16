@@ -1,9 +1,16 @@
+variable "aws_ssm_region" {
+  type = string
+}
+
+variable "region" {
+  type = string
+}
+
 variable "transits" {
   description = "Map of transit gateway configurations"
   type = map(object({
     account                          = string
     cidr                             = string
-    region                           = string
     instance_size                    = string
     local_as_number                  = number
     bgp_manual_spoke_advertise_cidrs = optional(string, "")
@@ -28,7 +35,6 @@ variable "tgws" {
   description = "Map of AWS Transit Gateway configurations"
   type = map(object({
     amazon_side_asn             = number
-    region                      = string
     transit_gateway_cidr_blocks = optional(list(string), [])
     create_tgw                  = bool # True to create TGW, false for existing
   }))
@@ -39,7 +45,6 @@ variable "vpcs" {
   description = "Map of VPC configurations"
   type = map(object({
     cidr            = string
-    region          = string
     tgw_key         = optional(string, "")
     private_subnets = list(string)
     public_subnets  = list(string)
