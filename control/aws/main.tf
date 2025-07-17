@@ -45,6 +45,28 @@ locals {
 
   all_tgw_names = toset([for pair in local.transit_tgw_pairs : pair.tgw_name])
 
+  firenet_transit_keys = [
+    for k, v in var.transits : k if v.fw_amount > 0
+  ]
+
+  inspection_policies = flatten([
+    for transit_key in local.firenet_transit_keys : [
+      for tgw_name in local.tgw_names_per_transit[transit_key] : [
+        {
+          transit_key     = transit_key
+          tgw_name        = tgw_name
+          connection_name = "external-${local.tgw_name_to_id[tgw_name]}-1-${transit_key}"
+          pair_key        = "${transit_key}.${tgw_name}.external-1"
+        },
+        {
+          transit_key     = transit_key
+          tgw_name        = tgw_name
+          connection_name = "external-${local.tgw_name_to_id[tgw_name]}-2-${transit_key}"
+          pair_key        = "${transit_key}.${tgw_name}.external-2"
+        }
+      ]
+    ]
+  ])
 }
 
 module "mc-transit" {
@@ -287,3 +309,19 @@ resource "aws_route" "vpc_public_route" {
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment.vpc_attachment]
 }
+
+resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+  for_each = {
+    for policy in local.inspection_policies : policy.pair_key => policy
+  }
+
+  transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+
+  depends_on = [
+    module.mc-firenet,
+    aviatrix_transit_external_device_conn.external-1,
+    aviatrix_transit_external_device_conn.external-2
+  ]
+}
+
