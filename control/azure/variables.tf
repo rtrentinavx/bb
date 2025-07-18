@@ -1,3 +1,11 @@
+variable "aws_ssm_region" {
+  type = string
+}
+
+variable "region" {
+  type = string
+}
+
 variable "subscription_id" {
   type = string
 }
@@ -20,7 +28,6 @@ variable "vnets" {
     cidr                = optional(string)
     private_subnets     = optional(list(string), [])
     public_subnets      = optional(list(string), [])
-    region              = string
     vwan_hub_name       = string
   }))
   default = {}
@@ -38,7 +45,6 @@ variable "transits" {
   description = "Map of transit gateway configurations for Aviatrix."
   type = map(object({
     account          = string
-    region           = string
     cidr             = string
     instance_size    = string
     local_as_number  = number
@@ -56,7 +62,6 @@ variable "spokes" {
   description = "Map of spoke gateway configurations for Aviatrix."
   type = map(object({
     account         = string
-    region          = string
     cidr            = string
     instance_size   = string
     local_as_number = number
@@ -71,7 +76,6 @@ variable "spokes" {
 variable "vwan_hubs" {
   description = "Map of Virtual WAN hub configurations."
   type = map(object({
-    location                               = string
     virtual_hub_cidr                       = string
     virtual_router_auto_scale_min_capacity = optional(number)
   }))

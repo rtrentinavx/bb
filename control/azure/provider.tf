@@ -13,7 +13,7 @@ terraform {
   # }
 }
 provider "aws" {
-
+  region = var.aws_ssm_region
 }
 
 provider "aviatrix" {

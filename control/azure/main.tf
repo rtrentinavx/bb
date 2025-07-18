@@ -6,23 +6,23 @@ locals {
     )
   }
 
-  transit_gw_map = { for k, v in var.transits : "${v.account}_${v.region}" => local.stripped_names[k] }
+  transit_gw_map = { for k, v in var.transits : "${v.account}_${var.region}" => local.stripped_names[k] }
 
-  spoke_transit_gw = { for k, v in var.spokes : k => local.transit_gw_map["${v.account}_${v.region}"] }
+  spoke_transit_gw = { for k, v in var.spokes : k => local.transit_gw_map["${v.account}_${var.region}"] }
 
   vwan_names = toset(keys(var.vwan_configs))
 
   vwan_hub_to_vwan = { for k, v in var.vwan_hubs : k => "vwan-${k}" }
 
-  vwan_hub_to_location = { for k, v in var.vwan_hubs : k => v.location }
+  vwan_hub_to_location = { for k, v in var.vwan_hubs : k => var.region }
 
-  vwan_hub_names = { for k, v in var.vwan_hubs : k => "${k}-${lower(replace(v.location, " ", ""))}-hub" }
+  vwan_hub_names = { for k, v in var.vwan_hubs : k => "${k}-${lower(replace(var.region, " ", ""))}-hub" }
 
   vwan_hub_name_from_hub = { for k, v in local.vwan_hub_names : v => k }
 
   vwan_hub_info = {
     for k, v in var.vwan_hubs : k => {
-      location         = v.location
+      location         = var.region
       virtual_hub_cidr = v.virtual_hub_cidr
       azure_asn        = 65515
     }
@@ -152,6 +152,29 @@ locals {
       hub_ip_ha      = azurerm_virtual_hub.hub[pair.vwan_hub_name].virtual_router_ips[1]
     }
   }
+
+  firenet_transit_keys = [
+    for k, v in var.transits : k if try(v.fw_amount, 0) > 0
+  ]
+  spoke_to_firenet_transit = {
+    for spoke_key, spoke in var.spokes : spoke_key => [
+      for transit_key, transit in var.transits : transit_key
+      if transit.fw_amount > 0 && transit.account == spoke.account && var.region == var.region
+      ][0] if length([
+        for transit_key, transit in var.transits : transit_key
+        if transit.fw_amount > 0 && transit.account == spoke.account && var.region == var.region
+    ]) > 0
+  }
+  inspection_policies = flatten([
+    for transit_key in local.firenet_transit_keys : [
+      for conn in var.transits[transit_key].vwan_connections : {
+        transit_key     = transit_key
+        vwan_hub_name   = conn.vwan_hub_name
+        connection_name = "external-${conn.vwan_hub_name}-${transit_key}"
+      } if conn.vwan_hub_name != "" && contains(keys(var.vwan_hubs), conn.vwan_hub_name)
+    ]
+  ])
+
 }
 
 resource "azurerm_resource_group" "vwan_rg" {
@@ -162,8 +185,8 @@ resource "azurerm_resource_group" "vwan_rg" {
 
 resource "azurerm_resource_group" "transit_rg" {
   for_each = var.transits
-  name     = "rg-transit-${lower(each.key)}-${lower(replace(each.value.region, " ", ""))}"
-  location = each.value.region
+  name     = "rg-transit-${lower(each.key)}-${lower(replace(var.region, " ", ""))}"
+  location = var.region
 }
 
 resource "azurerm_resource_group" "vnet_rg" {
@@ -171,8 +194,8 @@ resource "azurerm_resource_group" "vnet_rg" {
     for k, v in merge(var.vnets, var.spokes) : k => v
     if lookup(var.spokes, k, null) != null || (!try(v.existing, false) && try(v.cidr, null) != null)
   }
-  name     = "rg-vnet-${lower(each.key)}-${lower(replace(each.value.region, " ", ""))}"
-  location = each.value.region
+  name     = "rg-vnet-${lower(each.key)}-${lower(replace(var.region, " ", ""))}"
+  location = var.region
 }
 
 resource "azurerm_virtual_wan" "vwan" {
@@ -188,7 +211,7 @@ resource "azurerm_virtual_network" "vnet" {
   for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && v.cidr != null }
   name                = each.key
   resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
-  location            = each.value.region
+  location            = var.region
   address_space       = [each.value.cidr]
 }
 
@@ -199,7 +222,7 @@ resource "azurerm_subnet" "private_subnet" {
         for i, subnet in try(v.private_subnets, []) : {
           key    = k
           subnet = subnet
-          region = v.region
+          region = var.region
           index  = i
         } if !try(v.existing, false) && v.cidr != null
       ]
@@ -218,7 +241,7 @@ resource "azurerm_subnet" "public_subnet" {
         for i, subnet in try(v.public_subnets, []) : {
           key    = k
           subnet = subnet
-          region = v.region
+          region = var.region
           index  = i
         } if !try(v.existing, false) && v.cidr != null
       ]
@@ -234,7 +257,7 @@ resource "azurerm_subnet" "public_subnet" {
 resource "azurerm_route_table" "private_route_table" {
   for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && try(length(v.private_subnets), 0) > 0 }
   name                = "rt-${each.key}-private"
-  location            = each.value.region
+  location            = var.region
   resource_group_name = azurerm_resource_group.vnet_rg[each.key].name
 }
 
@@ -260,7 +283,7 @@ resource "azurerm_virtual_hub" "hub" {
     data.azurerm_resource_group.existing_vwan_rg[local.vwan_hub_to_vwan[each.key]].name,
     azurerm_resource_group.vwan_rg[local.vwan_hub_to_vwan[each.key]].name
   )
-  location = each.value.location
+  location = var.region
   virtual_wan_id = try(
     data.azurerm_virtual_wan.existing_vwan[local.vwan_hub_to_vwan[each.key]].id,
     azurerm_virtual_wan.vwan[local.vwan_hub_to_vwan[each.key]].id
@@ -304,7 +327,7 @@ module "mc-transit" {
   account                       = each.value.account
   cloud                         = "azure"
   cidr                          = each.value.cidr
-  region                        = each.value.region
+  region                        = var.region
   instance_size                 = each.value.instance_size
   name                          = each.key
   gw_name                       = local.stripped_names[each.key]
@@ -339,7 +362,7 @@ module "mc-spoke" {
   account                  = each.value.account
   cloud                    = "azure"
   cidr                     = each.value.cidr
-  region                   = each.value.region
+  region                   = var.region
   instance_size            = each.value.instance_size
   name                     = each.key
   gw_name                  = local.stripped_names[each.key]
@@ -352,6 +375,7 @@ module "mc-spoke" {
   enable_bgp_over_lan      = true
   bgp_lan_interfaces_count = 1
   depends_on               = [azurerm_resource_group.vnet_rg]
+  inspection               = contains(keys(local.spoke_to_firenet_transit), each.key) ? true : false
 }
 
 resource "time_sleep" "wait_for_hub_connection" {
@@ -456,4 +480,18 @@ resource "azurerm_virtual_hub_bgp_connection" "spoke_peer_avx_ha" {
   peer_ip                       = each.value.bgp_lan_ips.ha
   virtual_network_connection_id = azurerm_virtual_hub_connection.transit_connection[each.key].id
   depends_on                    = [azurerm_virtual_hub_connection.transit_connection]
+}
+
+resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+  for_each = {
+    for policy in local.inspection_policies : "${policy.transit_key}.${policy.vwan_hub_name}" => policy
+  }
+
+  transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+
+  depends_on = [
+    module.mc-firenet,
+    aviatrix_transit_external_device_conn.transit_external
+  ]
 }
