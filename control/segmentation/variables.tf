@@ -1,3 +1,6 @@
+variable "aws_ssw_region" {
+  type = string
+}
 variable "connection_policy" {
   type = list(object({
     source = string

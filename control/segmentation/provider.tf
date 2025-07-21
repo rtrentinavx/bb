@@ -12,7 +12,7 @@ terraform {
 }
 
 provider "aws" {
-
+  region = var.aws_ssw_region
 }
 
 provider "aviatrix" {
