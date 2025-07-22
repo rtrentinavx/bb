@@ -1,4 +1,3 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
 data "aws_ssm_parameter" "aviatrix_ip" {
   name            = "/aviatrix/controller/ip"
   with_decryption = true

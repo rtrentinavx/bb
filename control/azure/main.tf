@@ -253,7 +253,6 @@ resource "azurerm_subnet" "public_subnet" {
   address_prefixes     = [each.value.subnet]
 }
 
-
 resource "azurerm_route_table" "private_route_table" {
   for_each            = { for k, v in var.vnets : k => v if !try(v.existing, false) && try(length(v.private_subnets), 0) > 0 }
   name                = "rt-${each.key}-private"
@@ -382,7 +381,7 @@ module "mc-spoke" {
 
 resource "time_sleep" "wait_for_hub_connection" {
   depends_on      = [azurerm_virtual_hub_connection.transit_connection]
-  create_duration = "300s"
+  create_duration = "600s"
 }
 
 resource "aviatrix_transit_external_device_conn" "transit_external" {

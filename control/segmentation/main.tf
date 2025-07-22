@@ -1,10 +1,10 @@
 locals {
-  unique_domains = toset(flatten([
-    for policy in var.connection_policy : [
-      policy.source,
-      policy.target
-    ]
-  ]))
+  domain_pairs = [
+    for policy in var.connection_policy : 
+    sort([policy.source, policy.target])
+  ]
+
+  unique_domains = toset(flatten(local.domain_pairs))
 
   connection_data_raw = try(jsondecode(terracurl_request.aviatrix_connections.response).results.connections, [])
 
@@ -20,19 +20,18 @@ locals {
             connection_name = gw_name
             source_gateway  = gw_name
             source_type     = "spoke"
-          } if strcontains(lower(gw_name), lower(domain))
+          } if strcontains(lower(gw_name), lower(domain)) && !contains([for k, v in local.connection_data_raw : v.name if strcontains(lower(v.name), lower(domain))], gw_name)
         ],
         [
           for conn_name, conn in local.transit_connections : {
             connection_name = conn_name
             source_gateway  = conn_name
             source_type     = "transit"
-          } if strcontains(lower(conn_name), lower(domain))
+          } if strcontains(lower(conn_name), lower(domain)) && !contains([for k, v in local.spoke_gateways : v.gw_name if strcontains(lower(v.gw_name), lower(domain))], conn_name)
         ]
       )
     )
   }
-
 
   domain_connection_pairs = flatten([
     for domain, connections in local.connection_data : [
@@ -75,7 +74,7 @@ resource "terracurl_request" "aviatrix_connections" {
 }
 
 resource "aviatrix_segmentation_network_domain" "domains" {
-  for_each    = local.unique_domains
+  for_each    = toset(var.domains)
   domain_name = each.value
 }
 

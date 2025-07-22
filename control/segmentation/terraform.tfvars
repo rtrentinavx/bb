@@ -1,6 +1,6 @@
 aws_ssw_region = "us-east-1"
+domains = ["infra", "prod", "non-prod"]
 connection_policy = [
   { source = "infra", target = "prod" },
-  { source = "infra", target = "non-prod" },
-  { source = "domain-a", target = "domain-b" }
+  { source = "infra", target = "non-prod" }
 ]

@@ -1,5 +1,5 @@
 aws_ssm_region  = "us-east-1"
-region          = "westus2"
+region          = "West US 2"
 subscription_id = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
 transits = {
   "azure-westus-transit-vnet" = {
