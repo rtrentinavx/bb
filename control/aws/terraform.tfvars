@@ -89,3 +89,21 @@ vpcs = {
     public_subnets  = ["10.4.0.128/26", "10.4.0.192/26"]
   }
 }
+
+external_devices = {
+  "onprem-router" = {
+    transit_key               = "transit1-vpc"
+    connection_name           = "to-onprem-router"
+    remote_gateway_ip         = "203.0.113.10"
+    bgp_enabled               = true
+    bgp_remote_asn            = "65010"
+    local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
+    remote_tunnel_cidr        = "169.254.1.2/30,169.254.1.6/30"
+    ha_enabled                = true
+    backup_remote_gateway_ip  = "203.0.113.11"
+    backup_local_tunnel_cidr  = "169.254.1.9/30,169.254.1.13/30"
+    backup_remote_tunnel_cidr = "169.254.1.10/30,169.254.1.14/30"
+    enable_ikev2              = true
+    inspected_by_firenet      = true
+  }
+}
