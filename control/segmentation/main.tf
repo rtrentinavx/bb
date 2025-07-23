@@ -1,6 +1,6 @@
 locals {
   domain_pairs = [
-    for policy in var.connection_policy : 
+    for policy in var.connection_policy :
     sort([policy.source, policy.target])
   ]
 

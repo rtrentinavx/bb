@@ -1,5 +1,3 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
-
 module "control_plane" {
   source                    = "./terraform-aviatrix-aws-controlplane/"
   controller_name           = var.controller_name

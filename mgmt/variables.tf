@@ -1,6 +1,11 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
 variable "region" {
   description = "AWS region for deploying the Aviatrix control plane"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "aws_ssm_region" {
+  description = "AWS region for AWS SSM"
   type        = string
   default     = "us-east-1"
 }

@@ -1,4 +1,3 @@
-# Updated on May 22, 2025 at 04:11 PM EDT
 terraform {
   cloud {
     organization = "lab-test-avx"
@@ -10,4 +9,9 @@ terraform {
 
 provider "aws" {
   region = var.region
+}
+
+provider "aws" {
+  alias  = "ssm"
+  region = var.aws_ssm_region
 }
