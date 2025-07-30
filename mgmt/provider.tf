@@ -1,12 +1,3 @@
-terraform {
-  cloud {
-    organization = "lab-test-avx"
-    workspaces {
-      name = "mgmt"
-    }
-  }
-}
-
 provider "aws" {
   region = var.region
 }
