@@ -12,7 +12,7 @@ locals {
     { for k, v in data.aws_ec2_transit_gateway.tgw : k => v.id }
   )
 
-  transit_keys  = [for k, v in var.transits : k if v.tgw_name != ""]
+  transit_keys = [for k, v in var.transits : k if v.tgw_name != ""]
 
   tgw_names_per_transit = {
     for k, v in var.transits : k => v.tgw_name != "" ? (
@@ -95,6 +95,18 @@ locals {
       pair_key        = v.pair_key
     } if v.inspected_by_firenet && lookup(var.transits[v.transit_key], "fw_amount", 0) > 0
   ]
+
+  tgw_account_pairs = flatten([
+    for tgw_name, tgw in var.tgws : [
+      for account_id in tgw.account_ids : {
+        tgw_name   = tgw_name
+        account_id = account_id
+        key        = "${tgw_name}.${account_id}"
+      }
+    ] if tgw.create_tgw && length(tgw.account_ids) > 0
+  ])
+  tgw_account_pairs_map = { for pair in local.tgw_account_pairs : pair.key => pair }
+
 }
 
 module "mc-transit" {
@@ -136,9 +148,10 @@ module "mc-firenet" {
 }
 
 resource "aws_ec2_transit_gateway" "tgw" {
-  for_each                    = { for k, v in var.tgws : k => v if v.create_tgw }
-  amazon_side_asn             = each.value.amazon_side_asn
-  transit_gateway_cidr_blocks = each.value.transit_gateway_cidr_blocks
+  for_each                       = { for k, v in var.tgws : k => v if v.create_tgw }
+  amazon_side_asn                = each.value.amazon_side_asn
+  auto_accept_shared_attachments = "enable" # Enable auto-accept for cross-account attachments
+  transit_gateway_cidr_blocks    = each.value.transit_gateway_cidr_blocks
   tags = {
     Name = each.key
   }
@@ -289,4 +302,28 @@ resource "aviatrix_transit_external_device_conn" "external_device" {
   phase1_local_identifier   = null
 
   depends_on = [module.mc-transit]
+}
+
+resource "aws_ram_resource_share" "tgw_share" {
+  for_each = { for k, v in var.tgws : k => v if v.create_tgw && (length(v.account_ids) > 0) }
+
+  name                      = "tgw-share-${each.key}"
+  allow_external_principals = length(each.value.account_ids) > 0 ? true : false
+
+  tags = {
+    Name = "tgw-share-${each.key}"
+  }
+}
+
+resource "aws_ram_resource_association" "tgw_association" {
+  for_each = { for k, v in var.tgws : k => v if v.create_tgw && (length(v.account_ids) > 0) }
+
+  resource_arn       = aws_ec2_transit_gateway.tgw[each.key].arn
+  resource_share_arn = aws_ram_resource_share.tgw_share[each.key].arn
+}
+
+resource "aws_ram_principal_association" "tgw_principal_account" {
+  for_each           = local.tgw_account_pairs_map
+  resource_share_arn = aws_ram_resource_share.tgw_share[each.value.tgw_name].arn
+  principal          = each.value.account_id
 }

@@ -36,9 +36,10 @@ variable "transits" {
 variable "tgws" {
   description = "Map of AWS Transit Gateway configurations"
   type = map(object({
-    amazon_side_asn             = number
+    amazon_side_asn             = optional(number)
     transit_gateway_cidr_blocks = optional(list(string), [])
-    create_tgw                  = bool # True to create TGW, false for existing
+    create_tgw                  = bool                   # True to create TGW, false for existing
+    account_ids                 = optional(list(string)) # List of AWS account IDs to share with
   }))
   default = {}
 }
