@@ -11,7 +11,7 @@ locals {
     { for k, v in aws_ec2_transit_gateway.tgw : k => v.id },
     { for k, v in data.aws_ec2_transit_gateway.tgw : k => v.id }
   )
-  rfc1918_cidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
   transit_keys  = [for k, v in var.transits : k if v.tgw_name != ""]
 
   tgw_names_per_transit = {
