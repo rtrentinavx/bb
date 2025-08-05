@@ -18,6 +18,7 @@ variable "transits" {
     fw_instance_size                 = optional(string, "c5.xlarge")
     firewall_image                   = optional(string, "")
     firewall_image_version           = optional(string, "")
+    bootstrap_bucket_name_1          = optional(string, "")
     tgw_name                         = optional(string, "")
     inside_cidr_blocks = map(object({
       connect_peer_1    = string
