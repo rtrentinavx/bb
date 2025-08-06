@@ -16,7 +16,7 @@ locals {
 module "vpc" {
   for_each = local.new_vpcs
   source   = "terraform-aws-modules/vpc/aws"
-  version  = "~>5.0"
+  version  = "~>6.0"
 
   name = each.key
   cidr = each.value.cidr
@@ -47,8 +47,13 @@ module "vpc" {
   }
 
   enable_nat_gateway = false
-  single_nat_gateway = true
+  create_igw         = true
   enable_vpn_gateway = false
+
+  providers = {
+    aws = aws.target
+  }
+
 }
 
 resource "aws_ec2_transit_gateway_vpc_attachment" "vpc_attachment" {
@@ -61,11 +66,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "vpc_attachment" {
   )
   subnet_ids = try(
     data.aws_subnets.private[each.key].ids,
-    slice(
-      module.vpc[each.key].private_subnets,
-      0,
-      min(1, length(try(module.vpc[each.key].private_subnets, [])))
-    )
+    module.vpc[each.key].private_subnets
   )
 
   tags = {
@@ -73,6 +74,8 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "vpc_attachment" {
   }
 
   depends_on = [module.vpc, data.aws_ec2_transit_gateway.tgw]
+
+  provider = aws.target
 }
 
 resource "aws_route" "vpc_private_route" {
@@ -95,8 +98,9 @@ resource "aws_route" "vpc_private_route" {
   transit_gateway_id     = local.tgw_name_to_id[var.vpcs[each.value.vpc_key].tgw_key]
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment.vpc_attachment]
-}
 
+  provider = aws.target
+}
 
 resource "aws_route" "vpc_public_route" {
   for_each = {
@@ -108,11 +112,13 @@ resource "aws_route" "vpc_public_route" {
             vpc_key        = k
             route_table_id = rt_id
             cidr           = cidr
-          }
+          } if cidr != "0.0.0.0/0"  # Exclude 0.0.0.0/0
         ]
       ] if v.tgw_key != ""
     ]) : pair.key => pair
   }
+  provider = aws.target
+
   route_table_id         = each.value.route_table_id
   destination_cidr_block = each.value.cidr
   transit_gateway_id     = local.tgw_name_to_id[var.vpcs[each.value.vpc_key].tgw_key]

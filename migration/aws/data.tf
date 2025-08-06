@@ -2,6 +2,8 @@ data "aws_vpc" "existing" {
   for_each = local.existing_vpcs
 
   id = each.value.vpc_id
+
+  provider = aws.target
 }
 
 data "aws_subnets" "private" {
@@ -16,10 +18,14 @@ data "aws_subnets" "private" {
     name   = "tag:Name"
     values = ["*private*"]
   }
+
+  provider = aws.target
+
 }
 
 data "aws_availability_zones" "available" {
-  state = "available"
+  state    = "available"
+  provider = aws.target
 }
 
 data "aws_ec2_transit_gateway" "tgw" {

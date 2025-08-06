@@ -1,6 +1,18 @@
 variable "region" {
   type = string
 }
+
+variable "target_account_id" {
+  description = "AWS account ID of the target account where VPCs are created"
+  type        = string
+}
+
+variable "target_role_name" {
+  description = "Name of the IAM role to assume in the target account"
+  type        = string
+  default     = "CrossAccountVPCRole"
+}
+
 variable "route_cidrs" {
   description = "List of CIDR blocks for routing. Defaults to RFC1918 CIDRs and 0.0.0.0/0 if not specified."
   type        = list(string)
