@@ -13,11 +13,11 @@ vpcs = {
   #   public_route_table_ids  = ["rtb-0e004e60f5af47553"]
   #   vpc_id                  = "vpc-040d3878bed24c914"
   # },
-    vpc1-vpc = {
+  vpc1-vpc = {
     tgw_key                 = "prod"
     private_subnets         = []
     public_subnets          = []
-    private_route_table_ids = ["rtb-0dae220befe3bd03c","rtb-029eab52306c56ee6"]
+    private_route_table_ids = ["rtb-0dae220befe3bd03c", "rtb-029eab52306c56ee6"]
     public_route_table_ids  = ["rtb-085a9a7e3e460a2dd"]
     vpc_id                  = "vpc-0912829e6f85aefa8"
   },
