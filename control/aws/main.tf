@@ -133,6 +133,7 @@ module "mc-transit" {
   enable_preserve_as_path          = true
   enable_segmentation              = true
   enable_advertise_transit_cidr    = true
+  enable_multi_tier_transit        = true
 }
 
 module "mc-firenet" {
