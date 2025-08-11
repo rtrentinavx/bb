@@ -55,13 +55,13 @@ locals {
         {
           transit_key     = transit_key
           tgw_name        = tgw_name
-          connection_name = "external-${local.tgw_name_to_id[tgw_name]}-1-${transit_key}"
+          connection_name = "external-${tgw_name}-${local.tgw_name_to_id[tgw_name]}-1-${transit_key}"
           pair_key        = "${transit_key}.${tgw_name}.external-1"
         },
         {
           transit_key     = transit_key
           tgw_name        = tgw_name
-          connection_name = "external-${local.tgw_name_to_id[tgw_name]}-2-${transit_key}"
+          connection_name = "external-${tgw_name}-${local.tgw_name_to_id[tgw_name]}-2-${transit_key}"
           pair_key        = "${transit_key}.${tgw_name}.external-2"
         }
       ]
@@ -232,7 +232,7 @@ resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-2" {
 resource "aviatrix_transit_external_device_conn" "external-1" {
   for_each                = local.transit_tgw_map
   vpc_id                  = module.mc-transit[each.value.transit_key].vpc.vpc_id
-  connection_name         = "external-${local.tgw_name_to_id[each.value.tgw_name]}-1-${each.value.transit_key}"
+  connection_name         = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-1-${each.value.transit_key}"
   gw_name                 = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
   remote_gateway_ip       = "${local.tgw_connect_ip[each.key].connect_peer_1},${local.tgw_connect_ip[each.key].ha_connect_peer_1}"
   direct_connect          = true
@@ -250,7 +250,7 @@ resource "aviatrix_transit_external_device_conn" "external-1" {
 resource "aviatrix_transit_external_device_conn" "external-2" {
   for_each                = local.transit_tgw_map
   vpc_id                  = module.mc-transit[each.value.transit_key].vpc.vpc_id
-  connection_name         = "external-${local.tgw_name_to_id[each.value.tgw_name]}-2-${each.value.transit_key}"
+  connection_name         = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-2-${each.value.transit_key}"
   gw_name                 = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
   remote_gateway_ip       = "${local.tgw_connect_ip[each.key].connect_peer_2},${local.tgw_connect_ip[each.key].ha_connect_peer_2}"
   direct_connect          = true
