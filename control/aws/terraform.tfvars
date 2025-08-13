@@ -29,12 +29,12 @@ tgws = {
   }
 }
 transits = {
-  transit1-vpc = {
+  aws-transit-1 = {
     account                 = "lab-test-aws"
     cidr                    = "10.0.0.0/23"
     instance_size           = "c5n.xlarge"
     local_as_number         = 65011
-    fw_amount               = 2
+    fw_amount               = 0
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = "test-lab-aviatrix-pan-bootstrap"
@@ -48,7 +48,7 @@ transits = {
       }
     }
   },
-  transit2-vpc = {
+  aws-transit-2 = {
     account         = "lab-test-aws"
     cidr            = "10.1.0.0/23"
     instance_size   = "c5n.xlarge"
@@ -77,20 +77,20 @@ transits = {
   }
 }
 
-external_devices = {
-  "onprem-router" = {
-    transit_key               = "transit1-vpc"
-    connection_name           = "to-onprem-router"
-    remote_gateway_ip         = "203.0.113.10"
-    bgp_enabled               = true
-    bgp_remote_asn            = "65010"
-    local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
-    remote_tunnel_cidr        = "169.254.1.2/30,169.254.1.6/30"
-    ha_enabled                = true
-    backup_remote_gateway_ip  = "203.0.113.11"
-    backup_local_tunnel_cidr  = "169.254.1.9/30,169.254.1.13/30"
-    backup_remote_tunnel_cidr = "169.254.1.10/30,169.254.1.14/30"
-    enable_ikev2              = true
-    inspected_by_firenet      = true
-  }
-}
+# external_devices = {
+#   "onprem-router" = {
+#     transit_key               = "transit1-vpc"
+#     connection_name           = "to-onprem-router"
+#     remote_gateway_ip         = "203.0.113.10"
+#     bgp_enabled               = true
+#     bgp_remote_asn            = "65010"
+#     local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
+#     remote_tunnel_cidr        = "169.254.1.2/30,169.254.1.6/30"
+#     ha_enabled                = true
+#     backup_remote_gateway_ip  = "203.0.113.11"
+#     backup_local_tunnel_cidr  = "169.254.1.9/30,169.254.1.13/30"
+#     backup_remote_tunnel_cidr = "169.254.1.10/30,169.254.1.14/30"
+#     enable_ikev2              = true
+#     inspected_by_firenet      = true
+#   }
+# }

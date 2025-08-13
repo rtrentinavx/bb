@@ -47,22 +47,19 @@ module "vpc" {
   private_subnet_names = [for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.private_subnets)) : "${each.key}-${az}-private-${idx + 1}"]
   public_subnet_names  = [for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.public_subnets)) : "${each.key}-${az}-public-${idx + 1}"]
 
+  # Disable default route table management to allow custom control
+  manage_default_route_table = false
+
+  # Tag the private route table with AZ and "rt" at the end
   private_route_table_tags = {
-    Name = "${each.key}-private-rt"
+    Name = "${each.key}-${element(slice(data.aws_availability_zones.available.names, 0, length(each.value.private_subnets)), 0)}-private-rt"
     Type = "private"
   }
-  public_route_table_tags = {
-    Name = "${each.key}-public-rt"
-    Type = "public"
-  }
 
-  private_subnet_tags = {
-    for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.private_subnets)) :
-    tostring(idx) => "${each.key}-${az}-private-${idx + 1}"
-  }
-  public_subnet_tags = {
-    for idx, az in slice(data.aws_availability_zones.available.names, 0, length(each.value.public_subnets)) :
-    tostring(idx) => "${each.key}-${az}-public-${idx + 1}"
+  # Tag the public route table with AZ and "rt" at the end
+  public_route_table_tags = {
+    Name = "${each.key}-${element(slice(data.aws_availability_zones.available.names, 0, length(each.value.public_subnets)), 0)}-public-rt"
+    Type = "public"
   }
 
   enable_nat_gateway = false

@@ -1,3 +1,5 @@
+aws_ssm_region = "us-east-1"
+
 hub_project_id = "rtrentin-01"
 
 ncc_hubs = [

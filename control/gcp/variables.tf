@@ -1,3 +1,7 @@
+variable "aws_ssm_region" {
+  type = string 
+}
+
 variable "hub_project_id" {
   type        = string
   description = "GCP project ID for NCC hubs"

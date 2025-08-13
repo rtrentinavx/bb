@@ -29,6 +29,10 @@ data "aws_ec2_transit_gateway" "tgw" {
     name   = "tag:Name"
     values = [each.key]
   }
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
 }
 
 data "aws_subnet" "gw_subnet" {
