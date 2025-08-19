@@ -1,5 +1,5 @@
 variable "aws_ssm_region" {
-  type = string 
+  type = string
 }
 
 variable "hub_project_id" {
@@ -28,6 +28,14 @@ variable "transits" {
       non-prod     = optional(string)
       prod         = optional(string)
     })
+    fw_amount               = optional(number, 0)
+    fw_instance_size        = optional(string, "n1-standard-4")
+    firewall_image          = optional(string, "")
+    firewall_image_version  = optional(string, "")
+    bootstrap_bucket_name_1 = optional(string, "")
+    lan_cidr                = optional(string, "")
+    mgmt_cidr               = optional(string, "")
+    egress_cidr             = optional(string, "")
   }))
   validation {
     condition = alltrue([

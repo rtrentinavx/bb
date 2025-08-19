@@ -1,5 +1,16 @@
 locals {
   bgp_lan_subnets_order = { for transit in var.transits : transit.gw_name => keys(transit.bgp_lan_subnets) }
+
+  inspection_policies = flatten([
+    for transit in var.transits : [
+      for intf_type, subnet in transit.bgp_lan_subnets : {
+        transit_key     = transit.gw_name
+        connection_name = "${transit.gw_name}-bgp-lan-${intf_type}-to-avx"
+        pair_key        = "${transit.gw_name}-bgp-lan-${intf_type}"
+      } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name if hub.create], intf_type) && transit.fw_amount > 0
+    ]
+  ])
+
 }
 
 resource "google_network_connectivity_hub" "ncc_hubs" {
@@ -69,6 +80,7 @@ resource "google_network_connectivity_spoke" "avx_spokes" {
     module.mc_transit
   ]
 }
+
 
 resource "google_compute_network" "bgp_lan_vpcs" {
   for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
@@ -252,11 +264,14 @@ module "mc_transit" {
   insane_mode                      = true
   ha_gw                            = true
   enable_bgp_over_lan              = true
-  enable_transit_firenet           = false
+  enable_transit_firenet           = each.value.fw_amount > 0 ? true : false
   enable_segmentation              = true
+  enable_advertise_transit_cidr    = false
+  enable_multi_tier_transit        = true
   bgp_manual_spoke_advertise_cidrs = ""
   bgp_ecmp                         = true
   local_as_number                  = each.value.aviatrix_gw_asn
+  lan_cidr                         = each.value.lan_cidr
 
   bgp_lan_interfaces = [
     for intf_type in [for hub in var.ncc_hubs : hub.name if hub.create] : {
@@ -278,6 +293,21 @@ module "mc_transit" {
     google_compute_network.bgp_lan_vpcs,
     google_compute_subnetwork.bgp_lan_subnets
   ]
+}
+
+module "mc-firenet" {
+  for_each                = { for transit in var.transits : transit.gw_name => transit if transit.fw_amount > 0 }
+  source                  = "terraform-aviatrix-modules/mc-firenet/aviatrix"
+  version                 = "1.6.0"
+  transit_module          = module.mc_transit[each.key]
+  firewall_image          = each.value.firewall_image
+  firewall_image_version  = each.value.firewall_image_version
+  instance_size           = each.value.fw_instance_size
+  egress_enabled          = true
+  fw_amount               = each.value.fw_amount
+  bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
+  mgmt_cidr               = each.value.mgmt_cidr
+  egress_cidr             = each.value.egress_cidr
 }
 
 resource "google_compute_router_peer" "bgp_lan_peers_pri" {
@@ -435,5 +465,19 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
   depends_on = [
     module.mc_transit,
     google_compute_address.bgp_lan_addresses
+  ]
+}
+
+resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+  for_each = {
+    for policy in local.inspection_policies : policy.pair_key => policy
+  }
+
+  transit_firenet_gateway_name = module.mc_transit[each.value.transit_key].transit_gateway.gw_name
+  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+
+  depends_on = [
+    module.mc-firenet,
+    aviatrix_transit_external_device_conn.bgp_lan_connections
   ]
 }
