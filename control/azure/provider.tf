@@ -13,7 +13,7 @@ terraform {
   # }
 }
 provider "aws" {
-  alias = "ssm"
+  alias  = "ssm"
   region = var.aws_ssm_region
 }
 
