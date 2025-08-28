@@ -34,7 +34,7 @@ transits = {
     cidr                    = "10.0.0.0/23"
     instance_size           = "c5n.xlarge"
     local_as_number         = 65011
-    fw_amount               = 0
+    fw_amount               = 2
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = "test-lab-aviatrix-pan-bootstrap"
@@ -78,10 +78,34 @@ transits = {
 }
 
 # external_devices = {
-#   "onprem-router" = {
+#   "onprem-router-active" = {
 #     transit_key               = "transit1-vpc"
 #     connection_name           = "to-onprem-router"
 #     remote_gateway_ip         = "203.0.113.10"
+#     bgp_enabled               = true
+#     bgp_remote_asn            = "65010"
+#     local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
+#     remote_tunnel_cidr        = "169.254.1.2/30,169.254.1.6/30"
+#     ha_enabled                = false 
+#     enable_ikev2              = true
+#     inspected_by_firenet      = true
+#   }
+#   "onprem-router-standby" = {
+#     transit_key               = "transit1-vpc"
+#     connection_name           = "to-onprem-router"
+#     remote_gateway_ip         = "203.0.113.11"
+#     bgp_enabled               = true
+#     bgp_remote_asn            = "65010"
+#     local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
+#     remote_tunnel_cidr        = "169.254.1.2/30,169.254.1.6/30"
+#     ha_enabled                = false
+#     enable_ikev2              = true
+#     inspected_by_firenet      = true
+#   }
+#   "onprem-router-3" = {
+#     transit_key               = "transit1-vpc"
+#     connection_name           = "to-onprem-router"
+#     remote_gateway_ip         = "203.0.113.12"
 #     bgp_enabled               = true
 #     bgp_remote_asn            = "65010"
 #     local_tunnel_cidr         = "169.254.1.1/30,169.254.1.5/30"
