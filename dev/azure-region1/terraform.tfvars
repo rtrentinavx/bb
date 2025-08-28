@@ -8,6 +8,9 @@ transits = {
     account         = "rvb-dev-azure-acc"
     local_as_number = 64841
     fw_amount       = 2
+    firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
+    firewall_image_version  = "10.2.14"
+    bootstrap_bucket_name_1 = ""
   }
 }
 
