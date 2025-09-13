@@ -50,6 +50,8 @@ variable "transits" {
     local_as_number  = number
     fw_amount        = optional(number, 0)
     fw_instance_size = optional(string)
+    firewall_image = optional(string)
+    firewall_image_version = optional(string)
     vwan_connections = list(object({
       vwan_name     = string
       vwan_hub_name = string

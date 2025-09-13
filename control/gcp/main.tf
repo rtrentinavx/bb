@@ -7,36 +7,53 @@ locals {
         transit_key     = transit.gw_name
         connection_name = "${transit.gw_name}-bgp-lan-${intf_type}-to-avx"
         pair_key        = "${transit.gw_name}-bgp-lan-${intf_type}"
-      } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name if hub.create], intf_type) && transit.fw_amount > 0
+      } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name], intf_type) && transit.fw_amount > 0
     ]
   ])
 
 }
 
 resource "google_network_connectivity_hub" "ncc_hubs" {
-  for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
+  for_each = { for hub in var.ncc_hubs : hub.name => hub }
 
-  name        = "ncc-${each.value.name}"
-  project     = var.hub_project_id
-  description = "NCC hub for ${each.value.name}"
+  name            = "ncc-${each.value.name}"
+  project         = var.hub_project_id
+  description     = "NCC hub for ${each.value.name}"
+  preset_topology = "STAR"
 }
 
-resource "google_network_connectivity_spoke" "ncc_spokes" {
-  for_each = { for spoke in var.spokes : "${spoke.vpc_name}-${spoke.ncc_hub}" => spoke }
+resource "google_network_connectivity_group" "center_group" {
+  for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
 
-  name     = "${each.value.vpc_name}-spoke-${each.value.ncc_hub}"
-  project  = each.value.project_id
-  location = "global"
-  hub      = google_network_connectivity_hub.ncc_hubs[each.value.ncc_hub].id
+  name    = "center"
+  hub     = google_network_connectivity_hub.ncc_hubs[each.key].id
+  project = var.hub_project_id
 
-  linked_vpc_network {
-    uri = "projects/${each.value.project_id}/global/networks/${each.value.vpc_name}"
+  auto_accept {
+    auto_accept_projects = distinct([
+      for transit in var.transits : transit.project_id
+      if contains([for hub in var.ncc_hubs : hub.name if hub.create], each.key)
+    ])
   }
 
-  depends_on = [
-    google_network_connectivity_hub.ncc_hubs,
-    google_compute_network.bgp_lan_vpcs
-  ]
+  depends_on = [google_network_connectivity_hub.ncc_hubs]
+}
+
+resource "google_network_connectivity_group" "edge_group" {
+  for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
+
+  name    = "edge"
+  hub     = google_network_connectivity_hub.ncc_hubs[each.key].id
+  project = var.hub_project_id
+
+  auto_accept {
+    auto_accept_projects = distinct([
+      for spoke in var.spokes : spoke.project_id
+      if spoke.ncc_hub == each.key
+    ])
+  }
+
+  depends_on = [google_network_connectivity_hub.ncc_hubs]
 }
 
 resource "google_network_connectivity_spoke" "avx_spokes" {
@@ -56,31 +73,60 @@ resource "google_network_connectivity_spoke" "avx_spokes" {
   project  = each.value.project_id
   location = each.value.region
   hub      = google_network_connectivity_hub.ncc_hubs[each.value.intf_type].id
+  group    = "center"
 
   linked_router_appliance_instances {
     instances {
       virtual_machine = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${each.value.gw_name}"
-      ip_address      = module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index([for hub in var.ncc_hubs : hub.name if hub.create], each.value.intf_type)]
+      ip_address      = module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
     }
     instances {
       virtual_machine = try(
-        "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${module.mc_transit[each.value.gw_name].ha_transit_gateway.gw_name}",
+        "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${module.mc_transit[each.value.gw_name].ha_transit_gateway.gw_name}",
         "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
       )
       ip_address = try(
-        module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index([for hub in var.ncc_hubs : hub.name if hub.create], each.value.intf_type)],
+        module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)],
         ""
       )
     }
     site_to_site_data_transfer = true
   }
 
+  lifecycle {
+    ignore_changes = [group]
+  }
+
   depends_on = [
     google_network_connectivity_hub.ncc_hubs,
+    google_network_connectivity_group.center_group,
     module.mc_transit
   ]
 }
 
+resource "google_network_connectivity_spoke" "ncc_spokes" {
+  for_each = { for spoke in var.spokes : "${spoke.vpc_name}-${spoke.ncc_hub}" => spoke }
+
+  name     = "${each.value.vpc_name}-spoke-${each.value.ncc_hub}"
+  project  = each.value.project_id
+  location = "global"
+  hub      = google_network_connectivity_hub.ncc_hubs[each.value.ncc_hub].id
+  group    = "edge"
+
+  linked_vpc_network {
+    uri = "projects/${each.value.project_id}/global/networks/${each.value.vpc_name}"
+  }
+
+  lifecycle {
+    ignore_changes = [group]
+  }
+
+  depends_on = [
+    google_network_connectivity_hub.ncc_hubs,
+    google_network_connectivity_group.edge_group,
+    google_compute_network.bgp_lan_vpcs
+  ]
+}
 
 resource "google_compute_network" "bgp_lan_vpcs" {
   for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }

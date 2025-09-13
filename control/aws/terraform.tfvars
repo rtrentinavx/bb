@@ -7,7 +7,7 @@ tgws = {
     amazon_side_asn             = 64512
     transit_gateway_cidr_blocks = ["172.16.0.0/24"]
     create_tgw                  = true
-    account_ids                 = ["060795933909"]
+    account_ids                 = [""]
   },
   non-prod = {
     amazon_side_asn             = 64513
@@ -19,11 +19,11 @@ tgws = {
     amazon_side_asn             = 64514
     transit_gateway_cidr_blocks = ["172.18.0.0/24"]
     create_tgw                  = true
-    account_ids                 = ["060795933909"]
+    account_ids                 = [""]
   }
   on-prem = {
     amazon_side_asn             = 65534
-    transit_gateway_cidr_blocks = ["172.19.0.0/24"]
+    transit_gateway_cidr_blocks = [""]
     create_tgw                  = false
     account_ids                 = []
   }

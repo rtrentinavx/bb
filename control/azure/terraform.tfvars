@@ -8,6 +8,8 @@ transits = {
     account         = "lab-test-azure"
     local_as_number = 65001
     fw_amount       = 2
+    firewall_image          = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
+    firewall_image_version  = "11.2.5"
     vwan_connections = [
       {
         vwan_name     = "vwan-infra"
