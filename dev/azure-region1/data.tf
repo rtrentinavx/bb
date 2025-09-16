@@ -1,19 +1,19 @@
 data "aws_ssm_parameter" "aviatrix_ip" {
-  name            = "/aviatrix/controller/ip"
-  with_decryption = true
   provider        = aws.ssm
+  name            = "dev_aviatrix_ip"
+  with_decryption = true
 }
 
 data "aws_ssm_parameter" "aviatrix_username" {
-  name            = "/aviatrix/controller/username"
-  with_decryption = true
   provider        = aws.ssm
+  name            = "dev_aviatrix_username"
+  with_decryption = true
 }
 
 data "aws_ssm_parameter" "aviatrix_password" {
-  name            = "/aviatrix/controller/password"
-  with_decryption = true
   provider        = aws.ssm
+  name            = "dev_aviatrix_password"
+  with_decryption = true
 }
 
 data "azurerm_subscription" "current" {
