@@ -1,6 +1,9 @@
 aws_ssm_region  = "us-east-1"
+
 region          = "West US 2"
+
 subscription_id = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
+
 transits = {
   "azure-westus-transit-vnet" = {
     cidr            = "10.1.0.0/16"
@@ -38,7 +41,7 @@ vwan_configs = {
   "vwan-prod" = {
     location            = "East US"
     resource_group_name = "rg-vwan-prod"
-    existing            = true
+    existing            = false
   }
   "vwan-infra" = {
     location            = "East US"
@@ -57,17 +60,17 @@ vwan_hubs = {
 }
 
 vnets = {
-  "workload1-vnet" = {
-    cidr            = "10.4.0.0/16"
-    private_subnets = ["10.4.1.0/24", "10.4.2.0/24"]
-    public_subnets  = ["10.4.3.0/24", "10.4.4.0/24"]
-    vwan_name       = "vwan-infra"
-    vwan_hub_name   = "infra"
-  }
-  "workload2-vnet" = {
-    resource_group_name = "rg-vnet-workload2-vnet-eastus"
-    vwan_name           = "vwan-prod"
-    vwan_hub_name       = "prod"
-    existing            = true
-  }
+  # "workload1-vnet" = {
+  #   cidr            = "10.4.0.0/16"
+  #   private_subnets = ["10.4.1.0/24", "10.4.2.0/24"]
+  #   public_subnets  = ["10.4.3.0/24", "10.4.4.0/24"]
+  #   vwan_name       = "vwan-infra"
+  #   vwan_hub_name   = "infra"
+  # }
+  # "workload2-vnet" = {
+  #   resource_group_name = "rg-vnet-workload2-vnet-eastus"
+  #   vwan_name           = "vwan-prod"
+  #   vwan_hub_name       = "prod"
+  #   existing            = true
+  # }
 }
