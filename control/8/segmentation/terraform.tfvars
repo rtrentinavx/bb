@@ -1,4 +1,4 @@
-aws_ssw_region = "us-east-1"
+aws_ssw_region = "us-east-2"
 domains        = ["infra", "prod", "non-prod"]
 connection_policy = [
   { source = "infra", target = "prod" },

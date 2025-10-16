@@ -1,19 +1,20 @@
+# Updated on May 22, 2025 at 04:11 PM EDT
 terraform {
   required_providers {
     aviatrix = {
       source  = "AviatrixSystems/aviatrix"
-      version = "3.2.2"
+      version = "8.1.1"
     }
-    terracurl = {
-      source  = "devops-rob/terracurl"
-      version = ">= 1.2.1"
+    google = {
+      source = "hashicorp/google"
     }
   }
 }
 
 provider "aws" {
   alias  = "ssm"
-  region = var.aws_ssw_region
+  region = var.aws_ssm_region
+
 }
 
 provider "aviatrix" {

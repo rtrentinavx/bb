@@ -44,3 +44,13 @@ data "aviatrix_transit_gateways" "all_transit_gws" {}
 
 data "aviatrix_spoke_gateways" "all_spoke_gws" {}
 
+data "external" "aviatrix_connections" {
+  program = ["bash", "-c", <<EOT
+    curl -k -X POST https://${data.aws_ssm_parameter.aviatrix_ip.value}/v2/api \
+      -H "Content-Type: application/json" \
+      -d '{"action": "list_site2cloud", "CID": "${jsondecode(data.http.controller_login.response_body)["CID"]}"}' \
+      | jq -c '{"result": .results | tojson}'
+  EOT
+  ]
+  depends_on = [data.http.controller_login]
+}
