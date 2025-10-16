@@ -1,4 +1,4 @@
-aws_ssm_region  = "us-east-1"
+aws_ssm_region = "us-west-2"
 region          = "northeurope"
 subscription_id = "ae301b3f-b6a8-4cf7-94da-acd4df9beed5"
 transits = {
