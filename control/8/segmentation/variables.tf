@@ -3,10 +3,11 @@ variable "aws_ssw_region" {
 }
 
 variable "domains" {
+  description = "List of unique domain names for segmentation"
   type        = list(string)
-  description = "List of network domain names"
   default     = []
 }
+
 
 variable "connection_policy" {
   type = list(object({
@@ -15,6 +16,7 @@ variable "connection_policy" {
   }))
   default = []
 }
+
 variable "destroy_url" {
   type        = string
   description = "Dummy URL used by terracurl during destroy operations."
