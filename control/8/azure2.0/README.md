@@ -1,3 +1,9 @@
+## Spoke Gateway Naming Convention
+
+The spokes should carry the network domain they will belong to:
+
+- <any string except - >-<network domain name including - >-<any string except ->
+
 ## Requirements
 
 | Name | Version |

@@ -23,11 +23,11 @@ transits = {
 }
 
 spokes = {
-  "azure-spoke-vnet" = {
-    cidr            = "10.17.0.0/24"
+  "azure-infra-spoke-vnet" = {
+    cidr            = "10.18.0.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "lab-test-azure"
-    local_as_number = 65002
+    local_as_number = 65003
     vwan_connections = [
       {
         vwan_name     = "wan-prod",

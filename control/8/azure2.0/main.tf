@@ -7,4 +7,5 @@ module "transit" {
   vwan_configs    = var.vwan_configs
   vnets           = var.vnets
   vwan_hubs       = var.vwan_hubs
+  spokes          = var.spokes
 }

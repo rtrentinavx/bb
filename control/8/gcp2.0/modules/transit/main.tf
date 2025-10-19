@@ -587,9 +587,8 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
       } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name if hub.create], intf_type)
     ]
   ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
-
   vpc_id                    = module.mc_transit[each.value.gw_name].transit_gateway.vpc_id
-  connection_name           = "${each.value.gw_name}-bgp-lan-${each.value.intf_type}-to-avx"
+  connection_name           = "external-${each.value.intf_type}-${each.value.gw_name}"
   gw_name                   = each.value.gw_name
   connection_type           = "bgp"
   tunnel_protocol           = "LAN"
