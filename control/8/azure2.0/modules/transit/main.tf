@@ -485,16 +485,16 @@ resource "azurerm_virtual_hub_bgp_connection" "spoke_peer_avx_ha" {
   depends_on                    = [azurerm_virtual_hub_connection.transit_connection]
 }
 
-resource "aviatrix_transit_firenet_policy" "inspection_policies" {
-  for_each = {
-    for policy in local.inspection_policies : "${policy.transit_key}.${policy.vwan_hub_name}" => policy
-  }
+# resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+#   for_each = {
+#     for policy in local.inspection_policies : "${policy.transit_key}.${policy.vwan_hub_name}" => policy
+#   }
 
-  transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
-  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+#   transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+#   inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
 
-  depends_on = [
-    module.mc-firenet,
-    aviatrix_transit_external_device_conn.transit_external
-  ]
-}
+#   depends_on = [
+#     module.mc-firenet,
+#     aviatrix_transit_external_device_conn.transit_external
+#   ]
+# }

@@ -110,30 +110,29 @@ locals {
 }
 
 module "mc-transit" {
-  for_each                         = var.transits
-  source                           = "terraform-aviatrix-modules/mc-transit/aviatrix"
-  version                          = "8.0.0"
-  account                          = each.value.account
-  bgp_ecmp                         = true
-  cloud                            = "aws"
-  cidr                             = each.value.cidr
-  connected_transit                = true
-  enable_egress_transit_firenet    = false
-  enable_encrypt_volume            = true
-  enable_firenet                   = false
-  enable_s2c_rx_balancing          = true
-  enable_transit_firenet           = each.value.fw_amount > 0 ? true : false
-  instance_size                    = each.value.instance_size
-  insane_mode                      = true
-  local_as_number                  = each.value.local_as_number
-  name                             = each.key
-  gw_name                          = local.stripped_names[each.key]
-  region                           = var.region
-  bgp_manual_spoke_advertise_cidrs = each.value.bgp_manual_spoke_advertise_cidrs
-  enable_preserve_as_path          = true
-  enable_segmentation              = true
-  enable_advertise_transit_cidr    = true
-  enable_multi_tier_transit        = true
+  for_each                      = var.transits
+  source                        = "terraform-aviatrix-modules/mc-transit/aviatrix"
+  version                       = "8.0.0"
+  account                       = each.value.account
+  bgp_ecmp                      = true
+  cloud                         = "aws"
+  cidr                          = each.value.cidr
+  connected_transit             = true
+  enable_egress_transit_firenet = false
+  enable_encrypt_volume         = true
+  enable_firenet                = false
+  enable_s2c_rx_balancing       = true
+  enable_transit_firenet        = each.value.fw_amount > 0 ? true : false
+  instance_size                 = each.value.instance_size
+  insane_mode                   = true
+  local_as_number               = each.value.local_as_number
+  name                          = each.key
+  gw_name                       = local.stripped_names[each.key]
+  region                        = var.region
+  enable_preserve_as_path       = false
+  enable_segmentation           = true
+  enable_advertise_transit_cidr = true
+  enable_multi_tier_transit     = true
 }
 
 module "mc-firenet" {
@@ -230,62 +229,66 @@ resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-2" {
 }
 
 resource "aviatrix_transit_external_device_conn" "external-1" {
-  for_each                = local.transit_tgw_map
-  vpc_id                  = module.mc-transit[each.value.transit_key].vpc.vpc_id
-  connection_name         = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-1-${each.value.transit_key}"
-  gw_name                 = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
-  remote_gateway_ip       = "${local.tgw_connect_ip[each.key].connect_peer_1},${local.tgw_connect_ip[each.key].ha_connect_peer_1}"
-  direct_connect          = true
-  bgp_local_as_num        = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
-  bgp_remote_as_num       = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
-  tunnel_protocol         = "GRE"
-  ha_enabled              = false
-  local_tunnel_cidr       = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_1, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_1, 1)}/29"
-  remote_tunnel_cidr      = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_1, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_1, 2)}/29"
-  custom_algorithms       = false
-  phase1_local_identifier = null
-  enable_jumbo_frame      = true
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-1-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_1},${local.tgw_connect_ip[each.key].ha_connect_peer_1}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_1, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_1, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_1, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_1, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
   lifecycle {
-    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip,remote_tunnel_cidr ]
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
   }
 }
 
 resource "aviatrix_transit_external_device_conn" "external-2" {
-  for_each                = local.transit_tgw_map
-  vpc_id                  = module.mc-transit[each.value.transit_key].vpc.vpc_id
-  connection_name         = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-2-${each.value.transit_key}"
-  gw_name                 = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
-  remote_gateway_ip       = "${local.tgw_connect_ip[each.key].connect_peer_2},${local.tgw_connect_ip[each.key].ha_connect_peer_2}"
-  direct_connect          = true
-  bgp_local_as_num        = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
-  bgp_remote_as_num       = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
-  tunnel_protocol         = "GRE"
-  ha_enabled              = false
-  local_tunnel_cidr       = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_2, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_2, 1)}/29"
-  remote_tunnel_cidr      = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_2, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_2, 2)}/29"
-  custom_algorithms       = false
-  phase1_local_identifier = null
-  enable_jumbo_frame      = true
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-2-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_2},${local.tgw_connect_ip[each.key].ha_connect_peer_2}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_2, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_2, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_2, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_2, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
   lifecycle {
-    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip,remote_tunnel_cidr ]
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
   }
 }
 
-resource "aviatrix_transit_firenet_policy" "inspection_policies" {
-  for_each = {
-    for policy in concat(local.inspection_policies, local.external_inspection_policies) : policy.pair_key => policy
-  }
+# resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+#   for_each = {
+#     for policy in concat(local.inspection_policies, local.external_inspection_policies) : policy.pair_key => policy
+#   }
 
-  transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
-  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+#   transit_firenet_gateway_name = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+#   inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
 
-  depends_on = [
-    module.mc-firenet,
-    aviatrix_transit_external_device_conn.external-1,
-    aviatrix_transit_external_device_conn.external-2,
-    aviatrix_transit_external_device_conn.external_device
-  ]
-}
+#   depends_on = [
+#     module.mc-firenet,
+#     aviatrix_transit_external_device_conn.external-1,
+#     aviatrix_transit_external_device_conn.external-2,
+#     aviatrix_transit_external_device_conn.external_device
+#   ]
+# }
 
 resource "aviatrix_transit_external_device_conn" "external_device" {
   for_each                  = local.external_device_pairs

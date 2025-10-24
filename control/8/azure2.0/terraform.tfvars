@@ -30,19 +30,19 @@ spokes = {
     local_as_number = 65003
     vwan_connections = [
       {
-        vwan_name     = "wan-prod",
-        vwan_hub_name = "prod"
+        vwan_name     = "wan-infra",
+        vwan_hub_name = "infra"
       }
     ]
   }
 }
 
 vwan_configs = {
-  "vwan-prod" = {
-    location            = "East US"
-    resource_group_name = "rg-vwan-prod"
-    existing            = false
-  }
+  # "vwan-prod" = {
+  #   location            = "East US"
+  #   resource_group_name = "rg-vwan-prod"
+  #   existing            = false
+  # }
   "vwan-infra" = {
     location            = "East US"
     resource_group_name = "rg-vwan-infra"
@@ -54,9 +54,9 @@ vwan_hubs = {
   "infra" = {
     virtual_hub_cidr = "10.2.0.0/24"
   }
-  "prod" = {
-    virtual_hub_cidr = "10.3.0.0/24"
-  }
+  # "prod" = {
+  #   virtual_hub_cidr = "10.3.0.0/24"
+  # }
 }
 
 vnets = {

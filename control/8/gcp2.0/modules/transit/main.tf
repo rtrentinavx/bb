@@ -409,7 +409,6 @@ module "mc_transit" {
   enable_segmentation              = true
   enable_advertise_transit_cidr    = false
   enable_multi_tier_transit        = true
-  bgp_manual_spoke_advertise_cidrs = ""
   bgp_ecmp                         = true
   local_as_number                  = each.value.aviatrix_gw_asn
   lan_cidr                         = each.value.lan_cidr
@@ -584,6 +583,7 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
         region     = transit.region
         subnet     = subnet
         intf_type  = intf_type
+        manual_bgp_advertised_cidrs = transit.manual_bgp_advertised_cidrs
       } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name if hub.create], intf_type)
     ]
   ]) : "${pair.gw_name}-bgp-lan-${pair.intf_type}" => pair }
@@ -602,22 +602,24 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
   backup_local_lan_ip       = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
   enable_bgp_lan_activemesh = true
 
+  manual_bgp_advertised_cidrs =  each.value.manual_bgp_advertised_cidrs
+
   depends_on = [
     module.mc_transit,
     google_compute_address.bgp_lan_addresses
   ]
 }
 
-resource "aviatrix_transit_firenet_policy" "inspection_policies" {
-  for_each = {
-    for policy in local.inspection_policies : policy.pair_key => policy
-  }
+# resource "aviatrix_transit_firenet_policy" "inspection_policies" {
+#   for_each = {
+#     for policy in local.inspection_policies : policy.pair_key => policy
+#   }
 
-  transit_firenet_gateway_name = module.mc_transit[each.value.transit_key].transit_gateway.gw_name
-  inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
+#   transit_firenet_gateway_name = module.mc_transit[each.value.transit_key].transit_gateway.gw_name
+#   inspected_resource_name      = "SITE2CLOUD:${each.value.connection_name}"
 
-  depends_on = [
-    module.mc-firenet,
-    aviatrix_transit_external_device_conn.bgp_lan_connections
-  ]
-}
+#   depends_on = [
+#     module.mc-firenet,
+#     aviatrix_transit_external_device_conn.bgp_lan_connections
+#   ]
+# }
