@@ -9,18 +9,18 @@ tgws = {
     create_tgw                  = true
     account_ids                 = []
   },
-  non-prod = {
-    amazon_side_asn             = 64513
-    transit_gateway_cidr_blocks = ["172.17.0.0/24"]
-    create_tgw                  = true
-    account_ids                 = []
-  }
-  infra = {
-    amazon_side_asn             = 64514
-    transit_gateway_cidr_blocks = ["172.18.0.0/24"]
-    create_tgw                  = true
-    account_ids                 = []
-  }
+  # non-prod = {
+  #   amazon_side_asn             = 64513
+  #   transit_gateway_cidr_blocks = ["172.17.0.0/24"]
+  #   create_tgw                  = true
+  #   account_ids                 = []
+  # }
+  # infra = {
+  #   amazon_side_asn             = 64514
+  #   transit_gateway_cidr_blocks = ["172.18.0.0/24"]
+  #   create_tgw                  = true
+  #   account_ids                 = []
+  # }
   #on-prem = {
   #  amazon_side_asn             = 65534
   #  transit_gateway_cidr_blocks = []
@@ -29,12 +29,12 @@ tgws = {
   #}
 }
 transits = {
-  aws-transit-1 = {
+  aws-transit-prod-1 = {
     account                 = "lab-test-aws"
     cidr                    = "10.0.0.0/23"
     instance_size           = "c5n.xlarge"
     local_as_number         = 65011
-    fw_amount               = 0
+    fw_amount               = 2
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = "test-lab-aviatrix-pan-bootstrap"
@@ -47,34 +47,35 @@ transits = {
         ha_connect_peer_2 = "169.254.202.0/29"
       }
     }
+    manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
   },
-  aws-transit-2 = {
-    account         = "lab-test-aws"
-    cidr            = "10.1.0.0/23"
-    instance_size   = "c5n.xlarge"
-    local_as_number = 65012
-    tgw_name        = "non-prod,infra"
-    inside_cidr_blocks = {
-      "non-prod" = {
-        connect_peer_1    = "169.254.11.0/29"
-        ha_connect_peer_1 = "169.254.12.0/29"
-        connect_peer_2    = "169.254.13.0/29"
-        ha_connect_peer_2 = "169.254.14.0/29"
-      }
-      "infra" = {
-        connect_peer_1    = "169.254.15.0/29"
-        ha_connect_peer_1 = "169.254.16.0/29"
-        connect_peer_2    = "169.254.17.0/29"
-        ha_connect_peer_2 = "169.254.18.0/29"
-      }
-      "on-prem" = {
-        connect_peer_1    = "169.254.19.0/29"
-        ha_connect_peer_1 = "169.254.20.0/29"
-        connect_peer_2    = "169.254.21.0/29"
-        ha_connect_peer_2 = "169.254.22.0/29"
-      }
-    }
-  }
+  # aws-transit-2 = {
+  #   account         = "lab-test-aws"
+  #   cidr            = "10.1.0.0/23"
+  #   instance_size   = "c5n.xlarge"
+  #   local_as_number = 65012
+  #   tgw_name        = "non-prod,infra"
+  #   inside_cidr_blocks = {
+  #     "non-prod" = {
+  #       connect_peer_1    = "169.254.11.0/29"
+  #       ha_connect_peer_1 = "169.254.12.0/29"
+  #       connect_peer_2    = "169.254.13.0/29"
+  #       ha_connect_peer_2 = "169.254.14.0/29"
+  #     }
+  #     "infra" = {
+  #       connect_peer_1    = "169.254.15.0/29"
+  #       ha_connect_peer_1 = "169.254.16.0/29"
+  #       connect_peer_2    = "169.254.17.0/29"
+  #       ha_connect_peer_2 = "169.254.18.0/29"
+  #     }
+  #     "on-prem" = {
+  #       connect_peer_1    = "169.254.19.0/29"
+  #       ha_connect_peer_1 = "169.254.20.0/29"
+  #       connect_peer_2    = "169.254.21.0/29"
+  #       ha_connect_peer_2 = "169.254.22.0/29"
+  #     }
+  #   }
+  # }
 }
 
 # external_devices = {

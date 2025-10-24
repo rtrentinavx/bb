@@ -31,6 +31,7 @@ variable "transits" {
     lan_cidr                = optional(string, "")
     mgmt_cidr               = optional(string, "")
     egress_cidr             = optional(string, "")
+    manual_bgp_advertised_cidrs = optional(set(string), [])
   }))
   validation {
     condition = alltrue([

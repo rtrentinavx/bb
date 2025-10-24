@@ -3,10 +3,10 @@ aws_ssm_region = "us-east-2"
 hub_project_id = "rtrentin-01"
 
 ncc_hubs = [
-  { name = "ai-1", create = true },
-  { name = "ai-2", create = true },
-  { name = "ai-3", create = true },
-  { name = "ai-4", create = true },
+  { name = "ai-1", create = true, preset_topology = "MESH" },
+  # { name = "ai-2", create = true },
+  # { name = "ai-3", create = true },
+  # { name = "ai-4", create = true },
 ]
 
 transits = [
@@ -25,9 +25,9 @@ transits = [
     gw_size             = "n2-highcpu-8"
     bgp_lan_subnets = {
       ai-1 = "10.1.0.0/24"
-      ai-2 = "10.1.1.0/24"
-      ai-3 = "10.1.2.0/24"
-      ai-4 = "10.1.3.0/24"
+      # ai-2 = "10.1.1.0/24"
+      # ai-3 = "10.1.2.0/24"
+      # ai-4 = "10.1.3.0/24"
     }
     cloud_router_asn        = 16550
     aviatrix_gw_asn         = 65511
@@ -35,6 +35,7 @@ transits = [
     firewall_image          = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
     firewall_image_version  = "10.2.10-h14"
     bootstrap_bucket_name_1 = ""
+    manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
   },
   # {
   #   access_account_name = "lab-test-gcp"
@@ -91,13 +92,8 @@ transits = [
 
 spokes = [
   {
-    vpc_name   = "na-northeast1-ai-1-w"
+    vpc_name   = "rkb-east-workload-vpc"
     project_id = "rtrentin-01"
     ncc_hub    = "ai-1"
-  },
-  {
-    vpc_name   = "asia-south1-ai-2-w"
-    project_id = "rtrentin-01"
-    ncc_hub    = "ai-2"
   }
 ]
