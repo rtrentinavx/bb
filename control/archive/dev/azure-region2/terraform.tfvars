@@ -24,7 +24,7 @@ spokes = {
       }
     ]
   }
-    "az-northeurope-non-prod-vnet" = {
+  "az-northeurope-non-prod-vnet" = {
     cidr            = "10.85.42.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"
@@ -36,7 +36,7 @@ spokes = {
       }
     ]
   }
-    "az-northeurope-infra-vnet" = {
+  "az-northeurope-infra-vnet" = {
     cidr            = "10.85.43.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"

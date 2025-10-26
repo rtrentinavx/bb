@@ -20,6 +20,7 @@ variable "transits" {
     firewall_image_version      = optional(string, "")
     bootstrap_bucket_name_1     = optional(string, "")
     tgw_name                    = optional(string, "")
+    inspection_enabled = optional(bool,false)
     inside_cidr_blocks = map(object({
       connect_peer_1    = string
       ha_connect_peer_1 = string

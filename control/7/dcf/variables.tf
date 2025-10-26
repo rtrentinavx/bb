@@ -2,6 +2,22 @@ variable "aws_ssw_region" {
   type = string
 }
 
+variable "enable_distributed_firewalling" {
+  type    = bool
+  default = false
+}
+
+variable "distributed_firewalling_default_action_rule_action" {
+  type    = string
+  default = "DENY"
+
+}
+variable "distributed_firewalling_default_action_rule_logging" {
+  type    = bool
+  default = false
+}
+
+
 variable "smarties" {
   description = "Map of smart groups to create"
   type = map(object({

@@ -1,5 +1,7 @@
 aws_ssw_region = "us-west-2"
 
+enable_distributed_firewalling = true
+
 smarties = {
   "smart-group-1" = {
     cidr = "10.0.0.0/16"

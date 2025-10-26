@@ -1,18 +1,18 @@
-aws_ssm_region  = "us-east-1"
+aws_ssm_region = "us-east-1"
 
-region          = "West US 2"
+region = "West US 2"
 
 subscription_id = "47ab116c-8c15-4453-b06a-3fecd09ebda9"
 
 transits = {
   "azure-westus20-transit-vnet" = {
-    cidr            = "10.1.0.0/24"
-    instance_size   = "Standard_D16_v3"
-    account         = "lab-test-azure"
-    local_as_number = 65001
-    fw_amount       = 2
-    firewall_image          = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
-    firewall_image_version  = "11.2.5"
+    cidr                   = "10.1.0.0/24"
+    instance_size          = "Standard_D16_v3"
+    account                = "lab-test-azure"
+    local_as_number        = 65001
+    fw_amount              = 2
+    firewall_image         = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
+    firewall_image_version = "11.2.5"
     vwan_connections = [
       {
         vwan_name     = "vwan-infra"

@@ -13,25 +13,26 @@ variable "hub_project_id" {
 
 variable "transits" {
   type = list(object({
-    gw_name                 = string
-    project_id              = string
-    region                  = string
-    name                    = string
-    vpc_cidr                = string
-    gw_size                 = string
-    access_account_name     = string
-    cloud_router_asn        = number
-    aviatrix_gw_asn         = number
-    bgp_lan_subnets         = map(string)
-    fw_amount               = optional(number, 0)
-    fw_instance_size        = optional(string, "n1-standard-4")
-    firewall_image          = optional(string, "")
-    firewall_image_version  = optional(string, "")
-    bootstrap_bucket_name_1 = optional(string, "")
-    lan_cidr                = optional(string, "")
-    mgmt_cidr               = optional(string, "")
-    egress_cidr             = optional(string, "")
+    gw_name                     = string
+    project_id                  = string
+    region                      = string
+    name                        = string
+    vpc_cidr                    = string
+    gw_size                     = string
+    access_account_name         = string
+    cloud_router_asn            = number
+    aviatrix_gw_asn             = number
+    bgp_lan_subnets             = map(string)
+    fw_amount                   = optional(number, 0)
+    fw_instance_size            = optional(string, "n1-standard-4")
+    firewall_image              = optional(string, "")
+    firewall_image_version      = optional(string, "")
+    bootstrap_bucket_name_1     = optional(string, "")
+    lan_cidr                    = optional(string, "")
+    mgmt_cidr                   = optional(string, "")
+    egress_cidr                 = optional(string, "")
     manual_bgp_advertised_cidrs = optional(set(string), [])
+    inspection_enabled          = optional(bool, false)
   }))
   validation {
     condition = alltrue([

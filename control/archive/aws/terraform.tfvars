@@ -48,33 +48,33 @@ transits = {
       }
     }
   },
-#   aws-transit-2 = {
-#     account         = "lab-test-aws"
-#     cidr            = "10.1.0.0/23"
-#     instance_size   = "c5n.xlarge"
-#     local_as_number = 65012
-#     tgw_name        = "non-prod,infra"
-#     inside_cidr_blocks = {
-#       "non-prod" = {
-#         connect_peer_1    = "169.254.11.0/29"
-#         ha_connect_peer_1 = "169.254.12.0/29"
-#         connect_peer_2    = "169.254.13.0/29"
-#         ha_connect_peer_2 = "169.254.14.0/29"
-#       }
-#       "infra" = {
-#         connect_peer_1    = "169.254.15.0/29"
-#         ha_connect_peer_1 = "169.254.16.0/29"
-#         connect_peer_2    = "169.254.17.0/29"
-#         ha_connect_peer_2 = "169.254.18.0/29"
-#       }
-#       "on-prem" = {
-#         connect_peer_1    = "169.254.19.0/29"
-#         ha_connect_peer_1 = "169.254.20.0/29"
-#         connect_peer_2    = "169.254.21.0/29"
-#         ha_connect_peer_2 = "169.254.22.0/29"
-#       }
-#     }
-#   }
+  #   aws-transit-2 = {
+  #     account         = "lab-test-aws"
+  #     cidr            = "10.1.0.0/23"
+  #     instance_size   = "c5n.xlarge"
+  #     local_as_number = 65012
+  #     tgw_name        = "non-prod,infra"
+  #     inside_cidr_blocks = {
+  #       "non-prod" = {
+  #         connect_peer_1    = "169.254.11.0/29"
+  #         ha_connect_peer_1 = "169.254.12.0/29"
+  #         connect_peer_2    = "169.254.13.0/29"
+  #         ha_connect_peer_2 = "169.254.14.0/29"
+  #       }
+  #       "infra" = {
+  #         connect_peer_1    = "169.254.15.0/29"
+  #         ha_connect_peer_1 = "169.254.16.0/29"
+  #         connect_peer_2    = "169.254.17.0/29"
+  #         ha_connect_peer_2 = "169.254.18.0/29"
+  #       }
+  #       "on-prem" = {
+  #         connect_peer_1    = "169.254.19.0/29"
+  #         ha_connect_peer_1 = "169.254.20.0/29"
+  #         connect_peer_2    = "169.254.21.0/29"
+  #         ha_connect_peer_2 = "169.254.22.0/29"
+  #       }
+  #     }
+  #   }
 }
 
 # external_devices = {

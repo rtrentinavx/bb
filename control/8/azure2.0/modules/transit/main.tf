@@ -355,6 +355,7 @@ module "mc-firenet" {
   firewall_image_version   = each.value.firewall_image_version
   bootstrap_storage_name_1 = each.value.bootstrap_storage_name_1
   storage_access_key_1     = each.value.storage_access_key_1
+  inspection_enabled       = each.value.inspection_enabled
 }
 
 module "mc-spoke" {

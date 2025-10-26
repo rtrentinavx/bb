@@ -395,23 +395,23 @@ module "mc_transit" {
   source  = "terraform-aviatrix-modules/mc-transit/aviatrix"
   version = "8.0.0"
 
-  cloud                            = "gcp"
-  region                           = each.value.region
-  name                             = each.value.name
-  gw_name                          = each.value.gw_name
-  cidr                             = each.value.vpc_cidr
-  account                          = each.value.access_account_name
-  instance_size                    = each.value.gw_size
-  insane_mode                      = true
-  ha_gw                            = true
-  enable_bgp_over_lan              = true
-  enable_transit_firenet           = each.value.fw_amount > 0 ? true : false
-  enable_segmentation              = true
-  enable_advertise_transit_cidr    = false
-  enable_multi_tier_transit        = true
-  bgp_ecmp                         = true
-  local_as_number                  = each.value.aviatrix_gw_asn
-  lan_cidr                         = each.value.lan_cidr
+  cloud                         = "gcp"
+  region                        = each.value.region
+  name                          = each.value.name
+  gw_name                       = each.value.gw_name
+  cidr                          = each.value.vpc_cidr
+  account                       = each.value.access_account_name
+  instance_size                 = each.value.gw_size
+  insane_mode                   = true
+  ha_gw                         = true
+  enable_bgp_over_lan           = true
+  enable_transit_firenet        = each.value.fw_amount > 0 ? true : false
+  enable_segmentation           = true
+  enable_advertise_transit_cidr = false
+  enable_multi_tier_transit     = true
+  bgp_ecmp                      = true
+  local_as_number               = each.value.aviatrix_gw_asn
+  lan_cidr                      = each.value.lan_cidr
 
   bgp_lan_interfaces = [
     for intf_type in [for hub in var.ncc_hubs : hub.name if hub.create] : {
@@ -448,6 +448,7 @@ module "mc-firenet" {
   bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
   mgmt_cidr               = each.value.mgmt_cidr
   egress_cidr             = each.value.egress_cidr
+  inspection_enabled      = each.value.inspection_enabled
 }
 
 resource "google_compute_router_peer" "bgp_lan_peers_pri" {
@@ -578,11 +579,11 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
   for_each = { for pair in flatten([
     for transit in var.transits : [
       for intf_type, subnet in transit.bgp_lan_subnets : {
-        gw_name    = transit.gw_name
-        project_id = transit.project_id
-        region     = transit.region
-        subnet     = subnet
-        intf_type  = intf_type
+        gw_name                     = transit.gw_name
+        project_id                  = transit.project_id
+        region                      = transit.region
+        subnet                      = subnet
+        intf_type                   = intf_type
         manual_bgp_advertised_cidrs = transit.manual_bgp_advertised_cidrs
       } if subnet != "" && contains([for hub in var.ncc_hubs : hub.name if hub.create], intf_type)
     ]
@@ -602,7 +603,7 @@ resource "aviatrix_transit_external_device_conn" "bgp_lan_connections" {
   backup_local_lan_ip       = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
   enable_bgp_lan_activemesh = true
 
-  manual_bgp_advertised_cidrs =  each.value.manual_bgp_advertised_cidrs
+  manual_bgp_advertised_cidrs = each.value.manual_bgp_advertised_cidrs
 
   depends_on = [
     module.mc_transit,
