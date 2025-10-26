@@ -346,13 +346,13 @@ module "mc-firenet" {
   for_each = { for k, v in var.transits : k => v if v.fw_amount > 0 }
   source   = "terraform-aviatrix-modules/mc-firenet/aviatrix"
   version  = "1.6.0"
-  
+
   transit_module           = module.mc-transit[each.key]
   instance_size            = each.value.fw_instance_size
   egress_enabled           = true
   fw_amount                = each.value.fw_amount
-  firewall_image          = each.value.firewall_image
-  firewall_image_version  = each.value.firewall_image_version
+  firewall_image           = each.value.firewall_image
+  firewall_image_version   = each.value.firewall_image_version
   bootstrap_storage_name_1 = each.value.bootstrap_storage_name_1
   storage_access_key_1     = each.value.storage_access_key_1
 }

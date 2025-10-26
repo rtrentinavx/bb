@@ -44,13 +44,13 @@ variable "vnets" {
 variable "transits" {
   description = "Map of transit gateway configurations for Aviatrix."
   type = map(object({
-    account          = string
-    cidr             = string
-    instance_size    = string
-    local_as_number  = number
-    fw_amount        = optional(number, 0)
-    fw_instance_size = optional(string)
-    firewall_image = optional(string)
+    account                = string
+    cidr                   = string
+    instance_size          = string
+    local_as_number        = number
+    fw_amount              = optional(number, 0)
+    fw_instance_size       = optional(string)
+    firewall_image         = optional(string)
     firewall_image_version = optional(string)
     vwan_connections = list(object({
       vwan_name     = string

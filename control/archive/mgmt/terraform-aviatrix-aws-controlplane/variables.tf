@@ -218,6 +218,6 @@ variable "name_prefix" {
 
 variable "copilot_data_volume_size" {
   description = "Specifies the size of the CoPilot Data Disk Volume"
-  type = string
-  default = "100"
+  type        = string
+  default     = "100"
 }

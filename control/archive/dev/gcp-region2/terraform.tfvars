@@ -23,9 +23,9 @@ transits = [
     egress_cidr         = "10.85.74.0/24"
     gw_size             = "n2-highcpu-8"
     bgp_lan_subnets = {
-      prod         = "10.85.75.0/24"
-      non-prod     = "10.85.76.0/24"
-      infra        = "10.85.77.0/24"
+      prod     = "10.85.75.0/24"
+      non-prod = "10.85.76.0/24"
+      infra    = "10.85.77.0/24"
     }
     cloud_router_asn        = 64880
     aviatrix_gw_asn         = 64881

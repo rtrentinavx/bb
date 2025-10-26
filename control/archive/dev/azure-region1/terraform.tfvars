@@ -3,11 +3,11 @@ region          = "canadaeast"
 subscription_id = "ae301b3f-b6a8-4cf7-94da-acd4df9beed5"
 transits = {
   "az-canadaeast-transit-vnet" = {
-    cidr            = "10.85.30.0/24"
-    instance_size   = "Standard_D16_v3"
-    account         = "rvb-dev-azure-acc"
-    local_as_number = 64841
-    fw_amount       = 2
+    cidr                    = "10.85.30.0/24"
+    instance_size           = "Standard_D16_v3"
+    account                 = "rvb-dev-azure-acc"
+    local_as_number         = 64841
+    fw_amount               = 2
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = ""
@@ -27,7 +27,7 @@ spokes = {
       }
     ]
   }
-    "az-canadaeast-non-prod-vnet" = {
+  "az-canadaeast-non-prod-vnet" = {
     cidr            = "10.85.32.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"
@@ -39,7 +39,7 @@ spokes = {
       }
     ]
   }
-    "az-canadaeast-infra-vnet" = {
+  "az-canadaeast-infra-vnet" = {
     cidr            = "10.85.33.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"

@@ -52,6 +52,7 @@ variable "transits" {
     fw_instance_size       = optional(string)
     firewall_image         = optional(string)
     firewall_image_version = optional(string)
+    inspection_enabled     = optional(bool, false)
     vwan_connections = list(object({
       vwan_name     = string
       vwan_hub_name = string

@@ -43,15 +43,15 @@ transits = {
     }
   },
   aws-ca-transit-non-prod = {
-    account         = "rvb-dev-aws-acc"
-    cidr            = "10.85.12.0/24"
-    instance_size   = "t3.small"
-    local_as_number = 64815
-        fw_amount               = 0
+    account                 = "rvb-dev-aws-acc"
+    cidr                    = "10.85.12.0/24"
+    instance_size           = "t3.small"
+    local_as_number         = 64815
+    fw_amount               = 0
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = ""
-    tgw_name        = "non-prod"
+    tgw_name                = "non-prod"
     inside_cidr_blocks = {
       "non-prod" = {
         connect_peer_1    = "169.254.201.32/29"
@@ -62,15 +62,15 @@ transits = {
     }
   },
   aws-ca-transit-infra = {
-    account         = "rvb-dev-aws-acc"
-    cidr            = "10.85.13.0/24"
-    instance_size   = "t3.small"
-    local_as_number = 64816
-        fw_amount               = 0
+    account                 = "rvb-dev-aws-acc"
+    cidr                    = "10.85.13.0/24"
+    instance_size           = "t3.small"
+    local_as_number         = 64816
+    fw_amount               = 0
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = ""
-    tgw_name        = "infra"
+    tgw_name                = "infra"
     inside_cidr_blocks = {
       "infra" = {
         connect_peer_1    = "169.254.201.64/29"

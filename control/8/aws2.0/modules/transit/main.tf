@@ -146,6 +146,7 @@ module "mc-firenet" {
   egress_enabled          = true
   fw_amount               = each.value.fw_amount
   bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
+  inspection_enabled = each.value.inspection_enabled
 }
 
 resource "aws_ec2_transit_gateway" "tgw" {

@@ -24,7 +24,7 @@ spokes = {
       }
     ]
   }
-    "az-southindia-non-prod-vnet" = {
+  "az-southindia-non-prod-vnet" = {
     cidr            = "10.85.52.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"
@@ -36,7 +36,7 @@ spokes = {
       }
     ]
   }
-    "az-southindia-infra-vnet" = {
+  "az-southindia-infra-vnet" = {
     cidr            = "10.85.53.0/24"
     instance_size   = "Standard_D8_v3"
     account         = "rvb-dev-azure-acc"
