@@ -40,6 +40,18 @@ locals {
       ha_connect_peer_1 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 2 + index(local.transit_keys, pair.transit_key) * 4)
       connect_peer_2    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 3 + index(local.transit_keys, pair.transit_key) * 4)
       ha_connect_peer_2 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 4 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_3    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 5 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_3 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 6 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_4    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 7 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_4 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 8 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_5    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 9 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_5 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 10 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_6    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 11 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_6 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 12 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_7    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 13 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_7 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 14 + index(local.transit_keys, pair.transit_key) * 4)
+      connect_peer_8    = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 15 + index(local.transit_keys, pair.transit_key) * 4)
+      ha_connect_peer_8 = cidrhost(element(local.tgw_name_to_info[pair.tgw_name].transit_gateway_cidr_blocks, 0), 16 + index(local.transit_keys, pair.transit_key) * 4)
     }
   }
 
@@ -146,13 +158,13 @@ module "mc-firenet" {
   egress_enabled          = true
   fw_amount               = each.value.fw_amount
   bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
-  inspection_enabled = each.value.inspection_enabled
+  inspection_enabled      = each.value.inspection_enabled
 }
 
 resource "aws_ec2_transit_gateway" "tgw" {
   for_each                       = { for k, v in var.tgws : k => v if v.create_tgw }
   amazon_side_asn                = each.value.amazon_side_asn
-  auto_accept_shared_attachments = "enable" # Enable auto-accept for cross-account attachments
+  auto_accept_shared_attachments = "enable"
   transit_gateway_cidr_blocks    = each.value.transit_gateway_cidr_blocks
   tags = {
     Name = each.key
@@ -187,7 +199,25 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "attachment" {
   }
 }
 
-resource "aws_ec2_transit_gateway_connect" "connect" {
+resource "aws_ec2_transit_gateway_connect" "connect-1" {
+  for_each                = local.transit_tgw_map
+  transport_attachment_id = aws_ec2_transit_gateway_vpc_attachment.attachment[each.key].id
+  transit_gateway_id      = local.tgw_name_to_id[each.value.tgw_name]
+}
+
+resource "aws_ec2_transit_gateway_connect" "connect-2" {
+  for_each                = local.transit_tgw_map
+  transport_attachment_id = aws_ec2_transit_gateway_vpc_attachment.attachment[each.key].id
+  transit_gateway_id      = local.tgw_name_to_id[each.value.tgw_name]
+}
+
+resource "aws_ec2_transit_gateway_connect" "connect-3" {
+  for_each                = local.transit_tgw_map
+  transport_attachment_id = aws_ec2_transit_gateway_vpc_attachment.attachment[each.key].id
+  transit_gateway_id      = local.tgw_name_to_id[each.value.tgw_name]
+}
+
+resource "aws_ec2_transit_gateway_connect" "connect-4" {
   for_each                = local.transit_tgw_map
   transport_attachment_id = aws_ec2_transit_gateway_vpc_attachment.attachment[each.key].id
   transit_gateway_id      = local.tgw_name_to_id[each.value.tgw_name]
@@ -199,7 +229,7 @@ resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-1" {
   inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_1]
   peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
   transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_1
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect[each.key].id
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-1[each.key].id
 }
 
 resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-1" {
@@ -208,7 +238,7 @@ resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-1" {
   inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_1]
   peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
   transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_1
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect[each.key].id
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-1[each.key].id
 }
 
 resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-2" {
@@ -217,7 +247,7 @@ resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-2" {
   inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_2]
   peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
   transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_2
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect[each.key].id
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-1[each.key].id
 }
 
 resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-2" {
@@ -226,7 +256,115 @@ resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-2" {
   inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_2]
   peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
   transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_2
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect[each.key].id
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-1[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-3" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_3]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_3
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-2[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-3" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_3]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_3
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-2[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-4" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_4]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_4
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-2[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-4" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_4]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_4
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-2[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-5" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_5]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_5
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-3[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-5" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_5]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_5
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-3[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-6" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_6]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_6
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-3[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-6" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_6]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_6
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-3[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-7" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_7]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_7
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-4[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-7" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_7]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_7
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-4[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "connect_peer-8" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_8]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].connect_peer_8
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-4[each.key].id
+}
+
+resource "aws_ec2_transit_gateway_connect_peer" "ha_connect_peer-8" {
+  for_each                      = local.transit_tgw_map
+  bgp_asn                       = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  inside_cidr_blocks            = [var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_8]
+  peer_address                  = module.mc-transit[each.value.transit_key].transit_gateway.ha_private_ip
+  transit_gateway_address       = local.tgw_connect_ip[each.key].ha_connect_peer_8
+  transit_gateway_attachment_id = aws_ec2_transit_gateway_connect.connect-4[each.key].id
 }
 
 resource "aviatrix_transit_external_device_conn" "external-1" {
@@ -274,6 +412,145 @@ resource "aviatrix_transit_external_device_conn" "external-2" {
     ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
   }
 }
+
+resource "aviatrix_transit_external_device_conn" "external-3" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-3-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_3},${local.tgw_connect_ip[each.key].ha_connect_peer_3}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_3, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_3, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_3, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_3, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
+resource "aviatrix_transit_external_device_conn" "external-4" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-4-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_4},${local.tgw_connect_ip[each.key].ha_connect_peer_4}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_4, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_4, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_4, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_4, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
+resource "aviatrix_transit_external_device_conn" "external-5" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-5-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_5},${local.tgw_connect_ip[each.key].ha_connect_peer_5}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_5, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_5, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_5, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_5, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
+resource "aviatrix_transit_external_device_conn" "external-6" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-6-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_6},${local.tgw_connect_ip[each.key].ha_connect_peer_6}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_6, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_6, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_6, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_6, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
+resource "aviatrix_transit_external_device_conn" "external-7" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-7-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_7},${local.tgw_connect_ip[each.key].ha_connect_peer_7}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_7, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_7, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_7, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_7, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
+resource "aviatrix_transit_external_device_conn" "external-8" {
+  for_each                    = local.transit_tgw_map
+  vpc_id                      = module.mc-transit[each.value.transit_key].vpc.vpc_id
+  connection_name             = "external-${each.value.tgw_name}-${local.tgw_name_to_id[each.value.tgw_name]}-8-${each.value.transit_key}"
+  gw_name                     = module.mc-transit[each.value.transit_key].transit_gateway.gw_name
+  remote_gateway_ip           = "${local.tgw_connect_ip[each.key].connect_peer_8},${local.tgw_connect_ip[each.key].ha_connect_peer_8}"
+  direct_connect              = true
+  bgp_local_as_num            = module.mc-transit[each.value.transit_key].transit_gateway.local_as_number
+  bgp_remote_as_num           = local.tgw_name_to_info[each.value.tgw_name].amazon_side_asn
+  tunnel_protocol             = "GRE"
+  ha_enabled                  = false
+  local_tunnel_cidr           = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_8, 1)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_8, 1)}/29"
+  remote_tunnel_cidr          = "${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].connect_peer_8, 2)}/29,${cidrhost(var.transits[each.value.transit_key].inside_cidr_blocks[each.value.tgw_name].ha_connect_peer_8, 2)}/29"
+  custom_algorithms           = false
+  phase1_local_identifier     = null
+  enable_jumbo_frame          = true
+  manual_bgp_advertised_cidrs = var.transits[each.value.transit_key].manual_bgp_advertised_cidrs
+
+  lifecycle {
+    ignore_changes = [backup_bgp_remote_as_num, backup_direct_connect, backup_remote_gateway_ip, disable_activemesh, ha_enabled, local_tunnel_cidr, remote_gateway_ip, remote_tunnel_cidr]
+  }
+}
+
 
 # resource "aviatrix_transit_firenet_policy" "inspection_policies" {
 #   for_each = {
