@@ -405,7 +405,7 @@ module "mc_transit" {
   insane_mode                   = true
   ha_gw                         = true
   enable_bgp_over_lan           = true
-  enable_transit_firenet        = each.value.fw_amount > 0 ? true : false
+  enable_transit_firenet        = true
   enable_segmentation           = true
   enable_advertise_transit_cidr = false
   enable_multi_tier_transit     = true
