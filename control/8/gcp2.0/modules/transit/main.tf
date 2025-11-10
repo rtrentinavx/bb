@@ -445,10 +445,23 @@ module "mc-firenet" {
   instance_size           = each.value.fw_instance_size
   egress_enabled          = true
   fw_amount               = each.value.fw_amount
-  bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
   mgmt_cidr               = each.value.mgmt_cidr
   egress_cidr             = each.value.egress_cidr
   inspection_enabled      = each.value.inspection_enabled
+  bootstrap_bucket_name_1 = each.value.bootstrap_bucket_name_1
+  bootstrap_bucket_name_2 = each.value.bootstrap_bucket_name_2
+  user_data_1 = jsonencode({
+    "type"                                 = "dhcp-client"
+    "mgmt-interface-swap"                  = "enable"
+    "op-command-modes"                     = "mgmt-interface-swap"
+    "vmseries-bootstrap-gce-storagebucket" = "lab-test-aviatrix-pan-bootstrap"
+  })
+  user_data_2 = jsonencode({
+    "type"                                 = "dhcp-client"
+    "mgmt-interface-swap"                  = "enable"
+    "op-command-modes"                     = "mgmt-interface-swap"
+    "vmseries-bootstrap-gce-storagebucket" = "${each.value.bootstrap_bucket_name_2}"
+  })
 }
 
 resource "google_compute_router_peer" "bgp_lan_peers_pri" {

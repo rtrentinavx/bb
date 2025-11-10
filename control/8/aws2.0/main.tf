@@ -8,7 +8,7 @@ module "transit" {
       cidr                    = "10.0.0.0/23"
       instance_size           = "c5n.9xlarge"
       local_as_number         = 65011
-      fw_amount               = 0
+      fw_amount               = 2
       firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
       firewall_image_version  = "10.2.14"
       bootstrap_bucket_name_1 = "test-lab-aviatrix-pan-bootstrap"
@@ -51,7 +51,7 @@ module "transit-west" {
   source         = "./modules/transit"
   region         = "us-west-1"
   tgws = {
-    prod = {
+    non-prod = {
       amazon_side_asn             = 64513
       transit_gateway_cidr_blocks = ["172.17.0.0/24"]
       create_tgw                  = true
@@ -60,13 +60,17 @@ module "transit-west" {
   }
   transits = {
     aws-transit-2 = {
-      account         = "lab-test-aws"
-      cidr            = "10.1.0.0/23"
-      instance_size   = "c5n.9xlarge"
-      local_as_number = 65012
-      tgw_name        = "prod"
+      account                 = "lab-test-aws"
+      cidr                    = "10.1.0.0/23"
+      instance_size           = "c5n.xlarge"
+      local_as_number         = 65012
+      tgw_name                = "non-prod"
+      fw_amount               = 2
+      firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
+      firewall_image_version  = "10.2.14"
+      bootstrap_bucket_name_1 = "test-lab-aviatrix-pan-bootstrap"
       inside_cidr_blocks = {
-        "prod" = {
+        "non-prod" = {
           connect_peer_1    = "169.254.11.0/29"
           ha_connect_peer_1 = "169.254.12.0/29"
           connect_peer_2    = "169.254.13.0/29"
