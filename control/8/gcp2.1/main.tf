@@ -1,13 +1,14 @@
 module "transit" {
   aws_ssm_region = "us-west-2"
   source         = "./modules/transit"
-  hub_project_id = "rtrentin-01"
+  project_id     = "rtrentin-01"
   ncc_hubs = [
     { name = "ai-1", create = true, preset_topology = "MESH" },
   ]
   transits = [
     {
       access_account_name = "lab-test-gcp"
+      service_account     = "controller@rtrentin-01.iam.gserviceaccount.com"
       gw_name             = "gcp-us-transit"
       project_id          = "rtrentin-01"
       region              = "us-east1"
@@ -27,11 +28,13 @@ module "transit" {
       fw_amount                   = 2
       firewall_image              = "vmseries-flex-byol"
       firewall_image_version      = "10210h14"
-      bootstrap_bucket_name_1     = "lab-test-aviatrix-pan-bootstrap"
       manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
       source_ranges               = ["10.0.0.0/8"]
-      # ssh_keys =
-      # service_account =
+      ssh_keys                    = "rtrentin:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDa2Kz319A3dBeV/bBj5825OGarV5E6zyl70fa3SB2zh2EEsInFY6wj2Dac6nA6vGJTIC5bZPuOhJPsCuniUI+5o4C0df9V8lEQg7PLOcqdeZ3JklfzgvFK/YhWMDQnyJcOxGidVc6ywfyv0h+rbe5V1yhNvudTbvRn84hy/e/RJALBvIT1YUfr98cY+xloH0d/5wWIVtNj37xbwNDA4Eg2qO+84rBHGsIYS6wT+qXNH0IDW2SPQxmnIvf6Sweh2VnlFfn+/lcHhI7XcdjMsYFAKZjdu3ylnWLtbJw4FAY5rL0Q/OAako7pz3OFgGR2al6o/cYVxXjqsfz3yL6Ez32j ricardotrentin@Mac.attlocal.net"
+      files = {
+        "bootstrap/init-cfg.txt"  = "config/init-cfg.txt"
+        "bootstrap/bootstrap.xml" = "config/bootstrap.xml"
+      }
     },
     #   {
     #     access_account_name = "lab-test-gcp"

@@ -2,12 +2,12 @@ variable "aws_ssm_region" {
   type = string
 }
 
-variable "hub_project_id" {
+variable "project_id" {
   type        = string
-  description = "GCP project ID for NCC hubs"
+  description = "GCP project ID for NCC hubs and for Palo Alto Network bootstrap storage buckets"
   validation {
-    condition     = length(var.hub_project_id) > 0
-    error_message = "hub_project_id must be non-empty."
+    condition     = length(var.project_id) > 0
+    error_message = "project_id must be non-empty."
   }
 }
 
@@ -27,10 +27,6 @@ variable "transits" {
     fw_instance_size            = optional(string, "n2-standard-4")
     firewall_image              = optional(string, "")
     firewall_image_version      = optional(string, "")
-    bootstrap_bucket_name_1     = optional(string, "")
-    bootstrap_bucket_name_2     = optional(string, "")
-    user_data_1                 = optional(string, "")
-    user_data_2                 = optional(string, "")
     lan_cidr                    = optional(string, "")
     mgmt_cidr                   = optional(string, "")
     egress_cidr                 = optional(string, "")
@@ -42,7 +38,8 @@ variable "transits" {
     ssh_keys                    = optional(string, "admin:")
     source_ranges               = optional(set(string), ["0.0.0.0/0"])
     service_account             = optional(string, "")
-
+    name_prefix                 = optional(string, "paloaltonetworks-firewall-bootstrap-")
+    files                       = optional(map(string), {})
   }))
   validation {
     condition = alltrue([

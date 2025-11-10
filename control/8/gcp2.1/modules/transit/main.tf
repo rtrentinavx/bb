@@ -18,6 +18,10 @@ locals {
         fw_instance_size       = transit.fw_instance_size
         firewall_image         = transit.firewall_image
         firewall_image_version = transit.firewall_image_version
+        service_account        = transit.service_account
+        ssh_keys               = transit.ssh_keys
+        name_prefix            = transit.name_prefix
+        files                  = transit.files
       }],
       [for i in range(floor(tonumber(transit.fw_amount) / 2)) : {
         gw_name                = transit.gw_name
@@ -31,6 +35,10 @@ locals {
         fw_instance_size       = transit.fw_instance_size
         firewall_image         = transit.firewall_image
         firewall_image_version = transit.firewall_image_version
+        service_account        = transit.service_account
+        ssh_keys               = transit.ssh_keys
+        name_prefix            = transit.name_prefix
+        files                  = transit.files
       }]
     )
   ])
@@ -57,7 +65,7 @@ resource "google_network_connectivity_hub" "ncc_hubs" {
   for_each = { for hub in var.ncc_hubs : hub.name => hub }
 
   name            = "ncc-${each.value.name}"
-  project         = var.hub_project_id
+  project         = var.project_id
   description     = "NCC hub for ${each.value.name}"
   preset_topology = each.value.preset_topology
 }
@@ -67,7 +75,7 @@ resource "google_network_connectivity_group" "center_group" {
 
   name    = "center"
   hub     = google_network_connectivity_hub.ncc_hubs[each.key].id
-  project = var.hub_project_id
+  project = var.project_id
 
   auto_accept {
     auto_accept_projects = distinct([
@@ -84,7 +92,7 @@ resource "google_network_connectivity_group" "edge_group" {
 
   name    = "edge"
   hub     = google_network_connectivity_hub.ncc_hubs[each.key].id
-  project = var.hub_project_id
+  project = var.project_id
 
   auto_accept {
     auto_accept_projects = distinct([
@@ -101,7 +109,7 @@ resource "google_network_connectivity_group" "default_group" {
 
   name    = "default"
   hub     = google_network_connectivity_hub.ncc_hubs[each.key].id
-  project = var.hub_project_id
+  project = var.project_id
 
   auto_accept {
     auto_accept_projects = distinct(flatten([
@@ -265,7 +273,7 @@ resource "google_compute_network" "bgp_lan_vpcs" {
   for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
 
   name                    = "bgp-lan-${each.value.name}-vpc"
-  project                 = var.hub_project_id
+  project                 = var.project_id
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
 }
@@ -410,7 +418,7 @@ resource "google_compute_firewall" "bgp_lan_bgp" {
   for_each = { for hub in var.ncc_hubs : hub.name => hub if hub.create }
 
   name    = "bgp-lan-${each.value.name}-allow-bgp"
-  project = var.hub_project_id
+  project = var.project_id
   network = google_compute_network.bgp_lan_vpcs[each.value.name].self_link
 
   allow {
@@ -538,6 +546,16 @@ resource "google_compute_firewall" "egress_firewall_rules" {
   source_ranges = each.value.source_ranges
 }
 
+module "swfw-modules_bootstrap" {
+  for_each        = { for fw in local.fws : "${fw.gw_name}-${fw.type}-fw${fw.index + 1}" => fw }
+  source          = "PaloAltoNetworks/swfw-modules/google//modules/bootstrap"
+  version         = "2.0.11"
+  location        = each.value.region
+  name_prefix     = each.value.name_prefix
+  service_account = each.value.service_account
+  files           = each.value.files
+}
+
 module "pan_fw" {
   source  = "PaloAltoNetworks/swfw-modules/google//modules/vmseries"
   version = "2.0.11"
@@ -555,7 +573,7 @@ module "pan_fw" {
     type                                 = "dhcp-client"
     mgmt-interface-swap                  = "enable"
     op-command-modes                     = "mgmt-interface-swap"
-    vmseries-bootstrap-gce-storagebucket = each.value.bootstrap_bucket
+    vmseries-bootstrap-gce-storagebucket = module.swfw-modules_bootstrap[each.key].bucket_name
   }
 
   network_interfaces = [
@@ -573,9 +591,9 @@ module "pan_fw" {
     }
   ]
 
-  # service_account = 
+  service_account = each.value.service_account
 
-  # ssh_keys = each.value.ssh_keys
+  ssh_keys = each.value.ssh_keys
 
   tags = ["avx-${google_compute_network.egress_vpcs[each.value.gw_name].name}-gbl", each.key]
 
@@ -584,7 +602,8 @@ module "pan_fw" {
     google_compute_subnetwork.mgmt_subnets,
     google_compute_subnetwork.egress_subnets,
     google_compute_firewall.mgmt_firewall_rules,
-    google_compute_firewall.egress_firewall_rules
+    google_compute_firewall.egress_firewall_rules,
+    module.swfw-modules_bootstrap
   ]
 }
 

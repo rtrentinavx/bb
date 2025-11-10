@@ -17,9 +17,14 @@ provider "aws" {
 
 }
 
+provider "google" {
+  project = var.project_id
+}
+
 provider "aviatrix" {
   controller_ip           = data.aws_ssm_parameter.aviatrix_ip.value
   username                = data.aws_ssm_parameter.aviatrix_username.value
   password                = data.aws_ssm_parameter.aviatrix_password.value
   skip_version_validation = false
 }
+
