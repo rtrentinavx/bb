@@ -11,7 +11,6 @@ locals {
         index                  = i
         type                   = "pri"
         zone                   = transit.zone
-        bootstrap_bucket       = transit.bootstrap_bucket_name_1
         project_id             = transit.project_id
         region                 = transit.region
         name                   = transit.name
@@ -28,7 +27,6 @@ locals {
         index                  = i
         type                   = "ha"
         zone                   = transit.ha_zone
-        bootstrap_bucket       = transit.bootstrap_bucket_name_2
         project_id             = transit.project_id
         region                 = transit.region
         name                   = transit.name
