@@ -593,7 +593,7 @@ module "pan_fw" {
 
   ssh_keys = each.value.ssh_keys
 
-  tags = ["avx-${google_compute_network.egress_vpcs[each.value.gw_name].name}-gbl", each.key]
+  tags = ["avx-${google_compute_network.egress_vpcs[each.value.gw_name].name}-gbl", each.key, "vm-ilb"]
 
   depends_on = [
     module.mc_transit,
