@@ -5,13 +5,16 @@ terraform {
       version = "3.2.2"
     }
   }
-  # cloud {
-  #   organization = "lab-test-avx"
-  #   workspaces {
-  #     name = "aws"
-  #   }
-  # }
+  cloud { 
+    hostname = "tfe.rubrik.com" 
+    organization = "techops" 
+
+    workspaces { 
+      name = "avx-dev-aws-transit-region2" 
+    } 
+  } 
 }
+
 
 provider "aws" {
   alias  = "ssm"
@@ -23,8 +26,8 @@ provider "aws" {
 }
 
 provider "aviatrix" {
-  controller_ip           = data.aws_ssm_parameter.dev_aviatrix_ip.value
-  username                = data.aws_ssm_parameter.dev_aviatrix_username.value
-  password                = data.aws_ssm_parameter.dev_aviatrix_password.value
+  controller_ip           = data.aws_ssm_parameter.aviatrix_ip.value
+  username                = data.aws_ssm_parameter.aviatrix_username.value
+  password                = data.aws_ssm_parameter.aviatrix_password.value
   skip_version_validation = false
 }

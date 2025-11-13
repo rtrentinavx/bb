@@ -1,6 +1,6 @@
-aws_ssm_region = "us-east-1"
+aws_ssm_region = "us-west-2"
 
-hub_project_id = "360994900488"
+hub_project_id = "200181776611"
 
 ncc_hubs = [
   { name = "prod", create = true },
@@ -11,12 +11,12 @@ ncc_hubs = [
 transits = [
   {
     access_account_name = "rvb-dev-gcp-acc"
-    gw_name             = "gcp-northamerica-northeast1-transit"
-    project_id          = "360994900488"
+    gw_name             = "us-northeast1-transit"
+    project_id          = "200181776611"
     region              = "northamerica-northeast1"
     zone                = "northamerica-northeast1-a"
     ha_zone             = "northamerica-northeast1-b"
-    name                = "transit-northamerica-northeast1"
+    name                = "us-northeast1-transit"
     vpc_cidr            = "10.85.60.0/23"
     lan_cidr            = "10.85.62.0/24"
     mgmt_cidr           = "10.85.63.0/24"
@@ -30,8 +30,29 @@ transits = [
     cloud_router_asn        = 64870
     aviatrix_gw_asn         = 64871
     fw_amount               = 2
-    firewall_image          = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
-    firewall_image_version  = "10.2.10-h14"
-    bootstrap_bucket_name_1 = ""
+    firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
+    firewall_image_version  = "10.1.4-h13"
+    # bootstrap_bucket_name_1 = ""
   }
 ]
+
+
+spokes = [
+  {
+    vpc_name   = "prod"
+    project_id = "200181776611"
+    ncc_hub    = "prod"
+  },
+]
+    # {
+  #   vpc_name   = "ai-agent-dev"
+  #   project_id = "200181776611"
+  #   ncc_hub    = "ai-agent-dev"
+  # }
+  # {
+  #   vpc_name   = "ai-agent-prod"
+  #   project_id = "200181776611"
+  #   ncc_hub    = "ai-agent-dev"
+  # }
+
+

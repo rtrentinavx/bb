@@ -1,4 +1,4 @@
-aws_ssm_region  = "us-east-1"
+aws_ssm_region = "us-west-2"
 region          = "canadaeast"
 subscription_id = "ae301b3f-b6a8-4cf7-94da-acd4df9beed5"
 transits = {
@@ -11,6 +11,12 @@ transits = {
     firewall_image          = "Palo Alto Networks VM-Series Next-Generation Firewall (BYOL)"
     firewall_image_version  = "10.2.14"
     bootstrap_bucket_name_1 = ""
+    vwan_connections = [
+      {
+        vwan_name     = "wan-directconnect",
+        vwan_hub_name = "directconnect"
+      }
+    ]
   }
 }
 
@@ -39,6 +45,19 @@ spokes = {
       }
     ]
   }
+<<<<<<< HEAD
+    # "az-canadaeast-infra-vnet" = {
+    # cidr            = "10.85.33.0/24"
+    # instance_size   = "Standard_D8_v3"
+    # account         = "rvb-dev-azure-acc"
+    # local_as_number = 64844
+    # vwan_connections = [
+    #   {
+    #     vwan_name     = "wan-infra",
+    #     vwan_hub_name = "infra"
+    #   }
+    #  ]
+=======
   "az-canadaeast-infra-vnet" = {
     cidr            = "10.85.33.0/24"
     instance_size   = "Standard_D8_v3"
@@ -50,8 +69,9 @@ spokes = {
         vwan_hub_name = "infra"
       }
     ]
+>>>>>>> 4741a2ba04be98a580fd709d8585cb0a0917dbc7
   }
-}
+
 
 vwan_configs = {
   "vwan-prod" = {
@@ -64,11 +84,11 @@ vwan_configs = {
     resource_group_name = "rg-vwan-non-prod"
     existing            = false
   }
-  "vwan-infra" = {
-    location            = "East US"
-    resource_group_name = "rg-vwan-infra"
-    existing            = false
-  }
+  # "vwan-infra" = {
+  #   location            = "East US"
+  #   resource_group_name = "rg-vwan-infra"
+  #   existing            = false
+  # }
 }
 
 vwan_hubs = {
@@ -78,7 +98,7 @@ vwan_hubs = {
   "non-prod" = {
     virtual_hub_cidr = "10.85.35.0/24"
   }
-  "infra" = {
-    virtual_hub_cidr = "10.85.36.0/24"
-  }
+  # "infra" = {
+  #   virtual_hub_cidr = "10.85.36.0/24"
+  # }
 }

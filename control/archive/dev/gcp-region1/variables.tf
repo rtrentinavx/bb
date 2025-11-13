@@ -23,7 +23,7 @@ variable "transits" {
     cloud_router_asn    = number
     aviatrix_gw_asn     = number
     bgp_lan_subnets = object({
-      interconnect = optional(string)
+      # interconnect = optional(string)
       infra        = optional(string)
       non-prod     = optional(string)
       prod         = optional(string)
@@ -40,7 +40,7 @@ variable "transits" {
   validation {
     condition = alltrue([
       for t in var.transits :
-      t.bgp_lan_subnets.interconnect != "" ||
+      # t.bgp_lan_subnets.interconnect != "" ||
       t.bgp_lan_subnets.infra != "" ||
       t.bgp_lan_subnets.non-prod != "" ||
       t.bgp_lan_subnets.prod != ""
@@ -52,7 +52,7 @@ variable "transits" {
       for t in var.transits :
       alltrue([
         for s in [
-          t.bgp_lan_subnets.interconnect,
+          # t.bgp_lan_subnets.interconnect,
           t.bgp_lan_subnets.infra,
           t.bgp_lan_subnets.non-prod,
           t.bgp_lan_subnets.prod
@@ -105,7 +105,7 @@ variable "spokes" {
   validation {
     condition = alltrue([
       for s in var.spokes :
-      contains(["interconnect", "infra", "non-prod", "prod"], s.ncc_hub)
+      contains(["ai-agent-sandbox", "infra", "non-prod", "prod"], s.ncc_hub)
     ])
     error_message = "ncc_hub must be one of: interconnect, infra, non-prod, prod."
   }
