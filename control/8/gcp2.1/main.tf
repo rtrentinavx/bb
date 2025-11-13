@@ -48,7 +48,7 @@ module "transit" {
     #     lan_cidr            = "10.2.252.0/24"
     #     mgmt_cidr           = "10.2.250.0/24"
     #     egress_cidr         = "10.2.248.0/24"
-    #     gw_size             = "n2-highcpu-8"
+    #     gw_size             = "n4-highcpu-8"
     #     bgp_lan_subnets = {
     #       ai-1 = "10.2.0.0/24"
     #     }

@@ -33,7 +33,9 @@ module "transit" {
         }
       }
       manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
-      source_ranges               = ["10.0.0.0/8"]
+      # mgmt_source_ranges               = ["10.0.0.0/8"]
+      # egress_source_ranges =  ["10.0.0.0/8"]
+      # lan_source_ranges =  ["10.0.0.0/8"]
     }
   }
   tgws = {

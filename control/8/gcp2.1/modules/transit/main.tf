@@ -295,6 +295,11 @@ resource "google_compute_subnetwork" "bgp_lan_subnets" {
   network       = google_compute_network.bgp_lan_vpcs[each.value.intf_type].self_link
   ip_cidr_range = each.value.subnet
   depends_on    = [google_compute_network.bgp_lan_vpcs]
+
+  lifecycle {
+    ignore_changes = [log_config] 
+  }
+
 }
 
 resource "google_compute_router" "bgp_lan_routers" {
@@ -494,6 +499,11 @@ resource "google_compute_subnetwork" "mgmt_subnets" {
   region        = each.value.region
   network       = google_compute_network.mgmt_vpcs[each.key].id
   ip_cidr_range = each.value.mgmt_cidr
+
+  lifecycle {
+    ignore_changes = [log_config]
+  }
+
 }
 
 resource "google_compute_network" "egress_vpcs" {
@@ -513,6 +523,11 @@ resource "google_compute_subnetwork" "egress_subnets" {
   region        = each.value.region
   network       = google_compute_network.egress_vpcs[each.key].id
   ip_cidr_range = each.value.egress_cidr
+
+  lifecycle {
+    ignore_changes = [log_config]
+  }
+
 }
 
 resource "google_compute_firewall" "mgmt_firewall_rules" {

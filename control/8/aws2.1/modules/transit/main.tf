@@ -426,7 +426,6 @@ resource "aviatrix_firewall_instance_association" "fw_associations" {
 
   depends_on = [
     module.pan_fw,
-    aviatrix_firenet.firenet
   ]
 }
 
