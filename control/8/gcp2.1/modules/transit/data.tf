@@ -23,7 +23,7 @@ data "aviatrix_transit_gateway" "transit_gws" {
 }
 
 data "google_compute_subnetwork" "lan_subnetwork" {
-  for_each = { for transit in var.transits : transit.gw_name => transit }
+  for_each = { for t in var.transits : t.name => t }
 
   name    = "${each.key}-lan"
   region  = each.value.region

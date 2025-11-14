@@ -297,7 +297,7 @@ resource "google_compute_subnetwork" "bgp_lan_subnets" {
   depends_on    = [google_compute_network.bgp_lan_vpcs]
 
   lifecycle {
-    ignore_changes = [log_config] 
+    ignore_changes = [log_config]
   }
 
 }
@@ -570,17 +570,20 @@ module "swfw-modules_bootstrap" {
 }
 
 module "pan_fw" {
-  source  = "PaloAltoNetworks/swfw-modules/google//modules/vmseries"
-  version = "2.0.11"
+  #source  = "PaloAltoNetworks/swfw-modules/google//modules/vmseries"
+  #version = "2.0.11"
+  source = "../../modules/terraform-google-swfw-modules/modules/vmseries"
+
 
   for_each = { for fw in local.fws : "${fw.gw_name}-${fw.type}-fw${fw.index + 1}" => fw }
 
   project = each.value.project_id
   zone    = each.value.zone
+  region  = each.value.region
 
-  name           = each.key
-  vmseries_image = "${each.value.firewall_image}-${each.value.firewall_image_version}"
-  machine_type   = each.value.fw_instance_size
+  name         = each.key
+  custom_image = "${each.value.firewall_image}-${each.value.firewall_image_version}"
+  machine_type = each.value.fw_instance_size
 
   bootstrap_options = {
     type                                 = "dhcp-client"
@@ -599,7 +602,7 @@ module "pan_fw" {
       create_public_ip = true
     },
     {
-      subnetwork       = data.google_compute_subnetwork.lan_subnetwork[each.value.gw_name].self_link
+      subnetwork       = data.google_compute_subnetwork.lan_subnetwork[each.value.name].self_link
       create_public_ip = false
     }
   ]

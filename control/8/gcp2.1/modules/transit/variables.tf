@@ -74,7 +74,7 @@ variable "transits" {
   validation {
     condition = alltrue([
       for t in var.transits :
-      contains(["n2-highcpu-8", "n1-standard-8", "c2-standard-8","n4-highcpu-8", "n4-standard-8", "c2-standard-8"], t.gw_size)
+      contains(["n2-highcpu-8", "n1-standard-8", "c2-standard-8", "n4-highcpu-8", "n4-standard-8", "c2-standard-8"], t.gw_size)
     ])
     error_message = "gw_size must be an instance type supporting at least 5 network interfaces (e.g., n2-highcpu-8, n1-standard-8, c2-standard-8)."
   }

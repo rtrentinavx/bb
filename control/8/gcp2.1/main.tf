@@ -36,29 +36,35 @@ module "transit" {
         "bootstrap/bootstrap.xml" = "config/bootstrap.xml"
       }
     },
-    #   {
-    #     access_account_name = "lab-test-gcp"
-    #     gw_name             = "europe-west1"
-    #     project_id          = "rtrentin-01"
-    #     region              = "europe-west1"
-    #     zone                = "europe-west1-b"
-    #     ha_zone             = "europe-west1-c"
-    #     name                = "europe-west1"
-    #     vpc_cidr            = "10.2.254.0/24"
-    #     lan_cidr            = "10.2.252.0/24"
-    #     mgmt_cidr           = "10.2.250.0/24"
-    #     egress_cidr         = "10.2.248.0/24"
-    #     gw_size             = "n4-highcpu-8"
-    #     bgp_lan_subnets = {
-    #       ai-1 = "10.2.0.0/24"
-    #     }
-    #     cloud_router_asn            = 16550
-    #     aviatrix_gw_asn             = 65512
-    #     fw_amount                   = 0
-    #     firewall_image              = "Palo Alto Networks VM-Series Flex Next-Generation Firewall BYOL"
-    #     firewall_image_version      = "10.2.10-h14"
-    #     bootstrap_bucket_name_1     = ""
-    #     manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
-    #   }
+    {
+      access_account_name = "lab-test-gcp"
+      service_account     = "controller@rtrentin-01.iam.gserviceaccount.com"
+      gw_name             = "gcp-europe-west1-transit"
+      project_id          = "rtrentin-01"
+      region              = "europe-west1"
+      zone                = "europe-west1-b"
+      ha_zone             = "europe-west1-c"
+      name                = "europe-west1-transit"
+      vpc_cidr            = "10.2.240.0/24"
+      lan_cidr            = "10.2.241.0/24"
+      mgmt_cidr           = "10.2.242.0/24"
+      egress_cidr         = "10.2.243.0/24"
+      gw_size             = "n4-highcpu-8"
+      bgp_lan_subnets = {
+        ai-1 = "10.2.0.0/24"
+      }
+      cloud_router_asn            = 16550
+      aviatrix_gw_asn             = 65512
+      fw_amount                   = 2
+      firewall_image              = "vmseries-flex-byol"
+      firewall_image_version      = "10210h14"
+      manual_bgp_advertised_cidrs = ["0.0.0.0/0"]
+      source_ranges               = ["10.0.0.0/8"]
+      ssh_keys                    = "rtrentin:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDa2Kz319A3dBeV/bBj5825OGarV5E6zyl70fa3SB2zh2EEsInFY6wj2Dac6nA6vGJTIC5bZPuOhJPsCuniUI+5o4C0df9V8lEQg7PLOcqdeZ3JklfzgvFK/YhWMDQnyJcOxGidVc6ywfyv0h+rbe5V1yhNvudTbvRn84hy/e/RJALBvIT1YUfr98cY+xloH0d/5wWIVtNj37xbwNDA4Eg2qO+84rBHGsIYS6wT+qXNH0IDW2SPQxmnIvf6Sweh2VnlFfn+/lcHhI7XcdjMsYFAKZjdu3ylnWLtbJw4FAY5rL0Q/OAako7pz3OFgGR2al6o/cYVxXjqsfz3yL6Ez32j ricardotrentin@Mac.attlocal.net"
+      files = {
+        "bootstrap/init-cfg.txt"  = "config/init-cfg.txt"
+        "bootstrap/bootstrap.xml" = "config/bootstrap.xml"
+      }
+    }
   ]
 }
