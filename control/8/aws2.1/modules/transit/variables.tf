@@ -82,3 +82,30 @@ variable "external_devices" {
   }))
   default = {}
 }
+
+variable "spokes" {
+  description = "Map of spoke configurations keyed by the spoke name"
+  type = map(object({
+    account                          = string
+    attached                         = bool
+    cidr                             = string
+    customized_spoke_vpc_routes      = optional(string, "")
+    included_advertised_spoke_routes = optional(string, "")
+    insane_mode                      = optional(bool, true)
+    enable_max_performance           = optional(bool, false)
+    spoke_instance_size              = optional(string, "t3.large")
+    enable_bgp                       = optional(bool, false)
+    local_as_number                  = optional(string)
+    allocate_new_eip                 = optional(bool, true)
+    eip                              = optional(string)
+    ha_eip                           = optional(string)
+    use_existing_vpc                 = optional(bool, false)
+    vpc_id                           = optional(string)
+    gw_subnet                        = optional(string)
+    hagw_subnet                      = optional(string)
+    single_ip_snat                   = optional(bool, false)
+    transit_key                      = string
+  }))
+
+  default = {}
+}
