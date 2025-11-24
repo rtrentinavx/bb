@@ -49,12 +49,12 @@ module "transit" {
 
   spokes = {
     app-spoke-1 = {
-      account                          = "lab-test-aws"
-      attached                         = true
-      cidr                             = "10.10.0.0/16"
-      insane_mode                      = true
-      enable_max_performance           = true
-      transit_key                      = "aws-transit-prod-1"
+      account                = "lab-test-aws"
+      attached               = true
+      cidr                   = "10.10.0.0/16"
+      insane_mode            = true
+      enable_max_performance = true
+      transit_key            = "aws-transit-prod-1"
     }
   }
 }

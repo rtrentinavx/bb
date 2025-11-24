@@ -819,7 +819,6 @@ resource "aviatrix_transit_external_device_conn" "external-8" {
   }
 }
 
-
 resource "aviatrix_transit_firenet_policy" "inspection_policies" {
   for_each = {
     for p in concat(local.inspection_policies, local.external_inspection_policies) :
@@ -927,4 +926,27 @@ module "mc-spoke" {
   gw_subnet        = each.value.gw_subnet
   hagw_subnet      = each.value.hagw_subnet
   single_ip_snat   = each.value.single_ip_snat
+}
+
+
+resource "aws_secretsmanager_secret" "private_key" {
+  for_each = tls_private_key.generated
+  name     = "${each.key}-private-key"
+}
+
+resource "aws_secretsmanager_secret_version" "private_key_version" {
+  for_each      = tls_private_key.generated
+  secret_id     = aws_secretsmanager_secret.private_key[each.key].id
+  secret_string = each.value.private_key_pem
+}
+
+resource "aws_secretsmanager_secret" "public_key" {
+  for_each = tls_private_key.generated
+  name     = "${each.key}-public-key"
+}
+
+resource "aws_secretsmanager_secret_version" "public_key_version" {
+  for_each      = tls_private_key.generated
+  secret_id     = aws_secretsmanager_secret.public_key[each.key].id
+  secret_string = each.value.public_key_openssh
 }
