@@ -26,7 +26,7 @@ variable "transits" {
     mgmt_source_ranges          = optional(set(string), ["0.0.0.0/0"])
     egress_source_ranges        = optional(set(string), ["0.0.0.0/0"])
     lan_source_ranges           = optional(set(string), ["0.0.0.0/0"])
-    inside_cidr_blocks = map(object({
+    inside_cidr_blocks = optional(map(object({
       connect_peer_1    = string
       ha_connect_peer_1 = string
       connect_peer_2    = string
@@ -43,13 +43,9 @@ variable "transits" {
       ha_connect_peer_7 = string
       connect_peer_8    = string
       ha_connect_peer_8 = string
-    }))
+    })))
   }))
   default = {}
-  validation {
-    condition     = alltrue([for k, v in var.transits : length(v.tgw_name) > 0])
-    error_message = "Each transit must specify a non-empty tgw_name."
-  }
 }
 
 variable "tgws" {
@@ -57,8 +53,8 @@ variable "tgws" {
   type = map(object({
     amazon_side_asn             = optional(number)
     transit_gateway_cidr_blocks = optional(list(string), [])
-    create_tgw                  = bool                   # True to create TGW, false for existing
-    account_ids                 = optional(list(string)) # List of AWS account IDs to share with
+    create_tgw                  = bool                   
+    account_ids                 = optional(list(string))
   }))
   default = {}
 }

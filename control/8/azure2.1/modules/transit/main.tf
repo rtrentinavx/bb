@@ -399,17 +399,6 @@ resource "aviatrix_firenet" "firenet" {
 }
 
 
-resource "azurerm_resource_group" "fw_rg" {
-
-  for_each = {
-    for fw in local.fws :
-    "${local.stripped_names[fw.transit_key]}-${fw.type}-fw${fw.index + 1}" => fw
-  }
-
-  name     = "${each.key}-rg"
-  location = var.region
-}
-
 module "bootstrap" {
 
   for_each = {
@@ -419,12 +408,12 @@ module "bootstrap" {
 
   source              = "PaloAltoNetworks/swfw-modules/azurerm//modules/bootstrap"
   name                = substr(replace(each.key, "-", ""), 0, 24)
-  resource_group_name = "${each.key}-rg"
+  resource_group_name = module.mc-transit[each.value.transit_key].vpc.resource_group
   region              = var.region
   file_shares         = each.value.file_shares
 
   depends_on = [
-    azurerm_resource_group.fw_rg
+    module.mc-transit
   ]
 
 }
@@ -442,7 +431,7 @@ module "pan_fw" {
 
   name                = each.key
   region              = var.region
-  resource_group_name = azurerm_resource_group.fw_rg[each.key].name
+  resource_group_name = module.mc-transit[each.value.transit_key].vpc.resource_group
 
 
   authentication = {
