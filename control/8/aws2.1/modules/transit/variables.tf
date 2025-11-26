@@ -53,7 +53,7 @@ variable "tgws" {
   type = map(object({
     amazon_side_asn             = optional(number)
     transit_gateway_cidr_blocks = optional(list(string), [])
-    create_tgw                  = bool                   
+    create_tgw                  = bool
     account_ids                 = optional(list(string))
   }))
   default = {}

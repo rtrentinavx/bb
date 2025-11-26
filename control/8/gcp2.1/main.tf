@@ -25,7 +25,7 @@ module "transit" {
       }
       cloud_router_asn            = 16550
       aviatrix_gw_asn             = 65511
-      fw_amount                   = 2
+      fw_amount                   = 0
       firewall_image              = "vmseries-flex-byol"
       firewall_image_version      = "10210h14"
       manual_bgp_advertised_cidrs = ["0.0.0.0/0"]

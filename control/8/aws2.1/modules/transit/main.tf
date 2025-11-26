@@ -928,10 +928,14 @@ module "mc-spoke" {
   single_ip_snat   = each.value.single_ip_snat
 }
 
+resource "random_id" "suffix" {
+  for_each    = tls_private_key.generated
+  byte_length = 4
+}
 
 resource "aws_secretsmanager_secret" "private_key" {
   for_each = tls_private_key.generated
-  name     = "${each.key}-private-key"
+  name     = "${each.key}-private-key-${random_id.suffix[each.key].hex}"
 }
 
 resource "aws_secretsmanager_secret_version" "private_key_version" {
@@ -942,7 +946,7 @@ resource "aws_secretsmanager_secret_version" "private_key_version" {
 
 resource "aws_secretsmanager_secret" "public_key" {
   for_each = tls_private_key.generated
-  name     = "${each.key}-public-key"
+  name     = "${each.key}-public-key-${random_id.suffix[each.key].hex}"
 }
 
 resource "aws_secretsmanager_secret_version" "public_key_version" {

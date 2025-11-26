@@ -1,12 +1,12 @@
 locals {
-    stripped_names = {
+  stripped_names = {
     for k, v in merge(var.transits) : k => (
       length(regexall("^(.+)-vnet$", k)) > 0 ?
       regex("^(.+)-vnet$", k)[0] : k
     )
   }
 
-    stripped_spoke_names = {
+  stripped_spoke_names = {
     for k, v in merge(var.transits, var.spokes) : k => (
       length(regexall("^(.+)-vnet$", k)) > 0 ?
       regex("^(.+)-vnet$", k)[0] : k
@@ -378,14 +378,14 @@ module "mc-transit" {
   name                          = each.key
   gw_name                       = local.stripped_names[each.key]
   local_as_number               = each.value.local_as_number
-  enable_transit_firenet        = try(each.value.fw_amount, 0) > 0 ? true : false
+  enable_transit_firenet        = true
   enable_bgp_over_lan           = true
   bgp_ecmp                      = true
   enable_segmentation           = true
   enable_advertise_transit_cidr = true
   insane_mode                   = true
   resource_group                = azurerm_resource_group.transit_rg[each.key].name
-  bgp_lan_interfaces_count      = min(try(each.value.fw_amount, 0) > 0 ? length(local.vwan_names_per_transit[each.key]) + 1 : length(local.vwan_names_per_transit[each.key]), 3)
+  bgp_lan_interfaces_count      = length(local.vwan_names_per_transit[each.key]) > 0 ? min(length(local.vwan_names_per_transit[each.key]), 3) : 1
 }
 
 resource "aviatrix_firenet" "firenet" {
@@ -422,17 +422,14 @@ module "pan_fw" {
   source  = "PaloAltoNetworks/swfw-modules/azurerm//modules/vmseries"
   version = "3.4.4"
 
-
   for_each = {
     for fw in local.fws :
     "${local.stripped_names[fw.transit_key]}-${fw.type}-fw${fw.index + 1}" => fw
   }
 
-
   name                = each.key
   region              = var.region
   resource_group_name = module.mc-transit[each.value.transit_key].vpc.resource_group
-
 
   authentication = {
     disable_password_authentication = true
@@ -452,11 +449,11 @@ module "pan_fw" {
 
   interfaces = [
     {
-      name      = "mgmt"
+      name      = "${each.key}-mgmt"
       subnet_id = each.value.type == "pri" ? data.azurerm_subnet.mgmt_subnet[each.value.transit_key].id : data.azurerm_subnet.hagw-mgmt_subnet[each.value.transit_key].id
       ip_configurations = {
         primary-ip = {
-          name             = "primary-ip"
+          name             = "${each.key}-mgmt-ip"
           primary          = true
           create_public_ip = true
           public_ip_name   = "${each.key}-mgmt-pip"
@@ -464,24 +461,23 @@ module "pan_fw" {
       }
     },
     {
-      name      = "egress"
+      name      = "${each.key}-egress"
       subnet_id = each.value.type == "pri" ? data.azurerm_subnet.egress_subnet[each.value.transit_key].id : data.azurerm_subnet.hagw-egress_subnet[each.value.transit_key].id
       ip_configurations = {
         primary-ip = {
-          name             = "primary-ip"
           name             = "${each.key}-egress-ip"
           primary          = true
           create_public_ip = true
-          public_ip_name   = "${each.key}-egress-ip"
+          public_ip_name   = "${each.key}-egress-pip"
         }
       }
     },
     {
-      name      = "lan"
-      subnet_id = data.azurerm_subnet.lan_subnet[each.value.transit_key].id
+      name      = "${each.key}-lan"
+      subnet_id = each.value.type == "pri" ? data.azurerm_subnet.lan_subnet[each.value.transit_key].id : data.azurerm_subnet.hagw-lan_subnet[each.value.transit_key].id
       ip_configurations = {
         primary-ip = {
-          name             = "primary-ip"
+          name             = "${each.key}-lan-ip"
           primary          = true
           create_public_ip = false
         }
@@ -507,20 +503,20 @@ resource "aviatrix_firewall_instance_association" "fw_associations" {
   firenet_gw_name = each.value.type == "pri" ? module.mc-transit[each.value.transit_key].transit_gateway.gw_name : module.mc-transit[each.value.transit_key].transit_gateway.ha_gw_name
 
   firewall_name = format("%s-%s-fw%d",
-    each.value.transit_key,
+    local.stripped_names[each.value.transit_key],
     each.value.type,
     each.value.index + 1
   )
 
   instance_id = format(
     "%s:%s",
-    format("%s-%s-fw%d", each.value.transit_key, each.value.type, each.value.index + 1),
+    format("%s-%s-fw%d", local.stripped_names[each.value.transit_key], each.value.type, each.value.index + 1),
     split(":", module.mc-transit[each.value.transit_key].vpc.vpc_id)[1]
   )
 
-  management_interface = module.pan_fw[each.key].interfaces["mgmt"].id
-  egress_interface     = module.pan_fw[each.key].interfaces["egress"].id
-  lan_interface        = module.pan_fw[each.key].interfaces["lan"].id
+  management_interface = lookup({ for i in module.pan_fw[each.key].interfaces : i.name => i.name }, "${each.key}-mgmt")
+  egress_interface     = lookup({ for i in module.pan_fw[each.key].interfaces : i.name => i.name }, "${each.key}-egress")
+  lan_interface        = lookup({ for i in module.pan_fw[each.key].interfaces : i.name => i.name }, "${each.key}-lan")
 
   vendor_type = "Generic"
   attached    = true
@@ -548,13 +544,14 @@ module "mc-spoke" {
   enable_bgp               = try(each.value.enable_bgp, false)
   enable_bgp_over_lan      = try(each.value.enable_bgp, false) ? true : null
   bgp_lan_interfaces_count = try(each.value.enable_bgp, false) ? 1 : null
-  inspection               = contains(keys(local.spoke_to_firenet_transit), each.key) ? true : false
-  
-  depends_on               = [azurerm_resource_group.vnet_rg, module.mc-transit]
+  inspection               = (contains(keys(local.spoke_to_firenet_transit), each.key) && try(var.transits[local.spoke_to_firenet_transit[each.key]].inspection_enabled, false)) ? true : false
+
+  depends_on = [azurerm_resource_group.vnet_rg, module.mc-transit]
 
 }
 
 resource "time_sleep" "wait_for_hub_connection" {
+  count           = length(local.vwan_pairs) > 0 ? 1 : 0
   depends_on      = [azurerm_virtual_hub_connection.transit_connection, module.mc-transit]
   create_duration = "600s"
 }

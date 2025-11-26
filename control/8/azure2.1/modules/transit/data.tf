@@ -53,8 +53,8 @@ data "azurerm_subnet" "egress_subnet" {
 data "azurerm_subnet" "lan_subnet" {
   for_each             = var.transits
   name                 = "av-gw-${local.stripped_names[each.key]}-dmz-firewall-lan" # stripped name
-  virtual_network_name = module.mc-transit[each.key].vpc.name                        # original key
-  resource_group_name  = module.mc-transit[each.key].vpc.resource_group              # original key
+  virtual_network_name = module.mc-transit[each.key].vpc.name                       # original key
+  resource_group_name  = module.mc-transit[each.key].vpc.resource_group             # original key
   depends_on           = [module.mc-transit, aviatrix_firenet.firenet]
 }
 
@@ -72,6 +72,14 @@ data "azurerm_subnet" "hagw-egress_subnet" {
   virtual_network_name = module.mc-transit[each.key].vpc.name
   resource_group_name  = module.mc-transit[each.key].vpc.resource_group
   depends_on           = [module.mc-transit]
+}
+
+data "azurerm_subnet" "hagw-lan_subnet" {
+  for_each             = var.transits
+  name                 = "av-gw-${local.stripped_names[each.key]}-hagw-dmz-firewall-lan"
+  virtual_network_name = module.mc-transit[each.key].vpc.name
+  resource_group_name  = module.mc-transit[each.key].vpc.resource_group
+  depends_on           = [module.mc-transit, aviatrix_firenet.firenet]
 }
 
 data "azurerm_virtual_network" "spoke_vnet" {
