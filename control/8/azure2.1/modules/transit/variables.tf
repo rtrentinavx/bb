@@ -94,6 +94,7 @@ variable "vwan_hubs" {
   type = map(object({
     virtual_hub_cidr                       = string
     virtual_router_auto_scale_min_capacity = optional(number)
+    azure_asn                              = optional(number, 65515)
   }))
   default = {}
 }

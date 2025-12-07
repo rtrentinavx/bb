@@ -4,6 +4,7 @@ module "transit" {
   project_id     = "rtrentin-01"
   ncc_hubs = [
     { name = "ai-1", create = true, preset_topology = "MESH" },
+    { name = "ai-2", create = true, preset_topology = "MESH" },
   ]
   transits = [
     {
@@ -51,11 +52,11 @@ module "transit" {
       egress_cidr         = "10.2.243.0/24"
       gw_size             = "n4-highcpu-8"
       bgp_lan_subnets = {
-        ai-1 = "10.2.0.0/24"
+        ai-2 = "10.2.0.0/24"
       }
       cloud_router_asn            = 16550
       aviatrix_gw_asn             = 65512
-      fw_amount                   = 2
+      fw_amount                   = 0
       firewall_image              = "vmseries-flex-byol"
       firewall_image_version      = "10210h14"
       manual_bgp_advertised_cidrs = ["0.0.0.0/0"]

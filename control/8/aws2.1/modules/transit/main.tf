@@ -359,6 +359,8 @@ module "pan_fw" {
     "${fw.transit_key}-${fw.type}-fw${fw.index + 1}" => fw
   }
 
+  ebs_kms_key_alias     = "alias/aws/ebs"
+  
   name                  = each.key
   instance_type         = each.value.fw_instance_size
   enable_imdsv2         = true

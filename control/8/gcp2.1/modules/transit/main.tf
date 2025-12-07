@@ -702,7 +702,7 @@ resource "google_compute_router_peer" "bgp_lan_peers_ha" {
   interface                 = google_compute_router_interface.bgp_lan_interfaces_ha[each.key].name
   peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
   peer_asn                  = each.value.aviatrix_asn
-  advertised_route_priority = 200
+  advertised_route_priority = 100
   router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
 
   depends_on = [
@@ -733,7 +733,7 @@ resource "google_compute_router_peer" "bgp_lan_peers_pri_to_ha" {
   interface                 = google_compute_router_interface.bgp_lan_interfaces_ha[each.key].name
   peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
   peer_asn                  = each.value.aviatrix_asn
-  advertised_route_priority = 300
+  advertised_route_priority = 100
   router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.vpc_reg}/instances/${each.value.gw_name}"
 
   depends_on = [
@@ -764,7 +764,7 @@ resource "google_compute_router_peer" "bgp_lan_peers_ha_to_pri" {
   interface                 = google_compute_router_interface.bgp_lan_interfaces_pri[each.key].name
   peer_ip_address           = module.mc_transit[each.value.gw_name].transit_gateway.ha_bgp_lan_ip_list[index(local.bgp_lan_subnets_order[each.value.gw_name], each.value.intf_type)]
   peer_asn                  = each.value.aviatrix_asn
-  advertised_route_priority = 300
+  advertised_route_priority = 100
   router_appliance_instance = "projects/${each.value.project_id}/zones/${module.mc_transit[each.value.gw_name].transit_gateway.ha_zone}/instances/${each.value.gw_name}-hagw"
 
   depends_on = [

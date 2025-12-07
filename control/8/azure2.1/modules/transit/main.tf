@@ -31,7 +31,7 @@ locals {
     for k, v in var.vwan_hubs : k => {
       location         = var.region
       virtual_hub_cidr = v.virtual_hub_cidr
-      azure_asn        = 65515
+      azure_asn        = v.azure_asn
     }
   }
 
@@ -441,10 +441,15 @@ module "pan_fw" {
   }
 
   virtual_machine = {
-    zone              = null
-    size              = each.value.fw_instance_size
-    disk_name         = "${each.key}-disk"
-    bootstrap_options = "type=dhcp-client"
+    zone      = null
+    size      = each.value.fw_instance_size
+    disk_name = "${each.key}-disk"
+
+    bootstrap_options = jsonencode({
+      storage_account_name               = module.bootstrap[each.key].storage_account_name
+      storage_account_primary_access_key = module.bootstrap[each.key].storage_account_primary_access_key
+    })
+
   }
 
   interfaces = [
@@ -488,6 +493,7 @@ module "pan_fw" {
   depends_on = [
     module.mc-transit,
   ]
+
 }
 
 resource "aviatrix_firewall_instance_association" "fw_associations" {
